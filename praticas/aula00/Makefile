@@ -25,4 +25,3 @@ run1:
 
 run2:
 	./test < tree2.txt
-

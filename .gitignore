@@ -1,1 +1,11 @@
+#pastas:
+.vscode/
+
+#ficheiros
 Icon?
+.DS_Store
+*.dSYM
+*.warnings
+
+#exec:
+foo*
