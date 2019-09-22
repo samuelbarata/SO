@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "bst.h"
 
 void list_tree(node* p);
@@ -37,6 +38,12 @@ int main(void)
         else if ( c == 'd' ) debug = 1 - debug;
         else if ( c == 'p' ) print_tree(root);
         else if (c=='l') list_tree(root);
+        else if (c=='f'){
+            pid_t pid;
+            pid = fork();
+            if(pid>0)
+                wait(NULL);
+        }
         if( c == '\n')
             printf("> ");
     }
@@ -47,6 +54,7 @@ int main(void)
 }
 
 void list_tree(node* p){
+    if(p==NULL) return;
     list_tree(p->left);
     printf("%ld\n", p->key);
     list_tree(p->right);
