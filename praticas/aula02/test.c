@@ -3,6 +3,7 @@
 #include <string.h>
 #include "bst.h"
 
+void list_tree(node* p);
 
 int main(void)
 {
@@ -35,7 +36,7 @@ int main(void)
         }
         else if ( c == 'd' ) debug = 1 - debug;
         else if ( c == 'p' ) print_tree(root);
-
+        else if (c=='l') list_tree(root);
         if( c == '\n')
             printf("> ");
     }
@@ -45,3 +46,8 @@ int main(void)
     return 0;
 }
 
+void list_tree(node* p){
+    list_tree(p->left);
+    printf("%ld\n", p->key);
+    list_tree(p->right);
+}

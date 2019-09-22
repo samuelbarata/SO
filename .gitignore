@@ -6,6 +6,9 @@ Icon?
 .DS_Store
 *.dSYM
 *.warnings
+core
 
 #exec:
 foo*
+*.o
+test

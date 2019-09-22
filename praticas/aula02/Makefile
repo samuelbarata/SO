@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -std=gnu99
+CFLAGS = -g -Wall -std=gnu99 -pedantic
 # -pedantic
 # -g # adds debug info; required for using gdb or valgrind
 
@@ -12,16 +12,19 @@ bst.o: bst.c bst.h
 	gcc $(CFLAGS) -c bst.c -o bst.o
 
 clean:
-	rm -f *.o test
+	rm -f *.o test core
 
 clean2:
 	rm -f *.o
 
-run:
+run: test
 	./test
 
-run1:
+run1: test
 	./test < tree1.txt
 
-run2:
+run2: test
 	./test < tree2.txt
+
+run3: test
+	echo 'a 20 a 15 a 30 a 22 a 10 a 29 p l' | ./test > /dev/null

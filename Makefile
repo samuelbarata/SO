@@ -7,4 +7,4 @@ run: apontamentos.o
 	./apontamentos.o
 
 clean:
-	rm -f *.o
+	rm -f *.o *.dSYM
