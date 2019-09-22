@@ -6,6 +6,7 @@ Icon?
 .DS_Store
 *.dSYM
 *.warnings
+*.swp
 core
 
 #exec:
