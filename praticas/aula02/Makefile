@@ -28,3 +28,6 @@ run2: test
 
 run3: test
 	echo 'a 20 a 15 a 30 a 22 a 10 a 29 p l' | ./test > /dev/null
+
+run4: test
+	valgrind --tool=memcheck --leak-check=full ./test < tree1.txt
