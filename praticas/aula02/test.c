@@ -43,8 +43,16 @@ int main(void)
         else if (c=='f'){
             pid_t pid;
             pid = fork();
-            if(pid>0)
+
+            if(pid>0){  //pai
+                sleep(1);
                 wait(NULL);
+                printf("o filho terminou\n");
+            }
+            else{       //filho
+                printf("pid filho (atual) %d\npid pai %d\n", getpid(), getppid());
+                system("ps");
+            }
         }
         if( c == '\n')
             printf("> ");
