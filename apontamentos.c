@@ -15,7 +15,7 @@
 */
 
 
-//aula 19/09/19
+//aula 24/09/19
 void aula00(){
     /*pid() devolve o pid do outro processo
     getpid() devolve o pid do proprio processo*/
@@ -56,12 +56,38 @@ void comboios(){
     printf("1 comboio: %d\n", time2-time1);
 }
 
-//aula 24/09/19
+//aula 26/09/19
 void aula01(){
+    //execl(executavel, comandos,...)
+    //execv(executavel, [comandos])
+    //corre main de outro executavel
+    FILE *fp;
+    int *mydata;
+    fp=fopen("gdb.md", "r");
+    if(!fp){
+        perror("gdb.md");
+    }
+    fclose(fp);
+    fp=fopen("test.txt", "w");
+    if(!fp){
+        perror("test.txt");
+        exit(1);
+    }
+    fprintf(fp, "Hi file!\n");  //guarda em RAM e so escreve o mais tarde possivel => really fast
+    fputs(fp, "hallo");
+    fscanf(fp,"%f" , &mydata);
+    fseek(fp, 200,1);
+    ftell(fp);
+    fflush(fp);                 //força as alterações a serem gravadas
+    fclose(fp);
+
+
+
+    //pthread_create() ???
 }
 
 int main(){
-    aula00();
+    //aula00();
     //comboios();
-    //aula01();
+    aula01();
 }
