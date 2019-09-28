@@ -4,8 +4,8 @@ int main(){
     FILE *inFile, *outFile;
     char commando, *input;
 
-    fgets(input, 500 , stdin);
-    
+    sscanf("%s %s %s %s", , , , );
+
     inFile = fopen("", 'r');
     while(1){
         switch(commando){
