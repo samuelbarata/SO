@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 
 /*
@@ -15,9 +17,9 @@
 */
 
 
-//aula 24/09/19
+//aula 19/09/19
 void aula00(){
-    /*pid() devolve o pid do outro processo
+    /*getppid() devolve o pid do outro processo
     getpid() devolve o pid do proprio processo*/
     printf("parent process id = %d\n", getpid());
     fork();
@@ -56,8 +58,29 @@ void comboios(){
     printf("1 comboio: %d\n", time2-time1);
 }
 
-//aula 26/09/19
+//aula 24/09/19
 void aula01(){
+    int estado;
+    pid_t pid, lol, pid_filho;
+    lol=fork();
+    /*lol:
+    ao pai é devolvido o pid do filho
+    ao filho é devolvido 0
+    -1 em caso de erro
+    */
+    if(lol == -1) exit(EXIT_FAILURE);
+    pid = getpid();
+    printf("pid = %d\n", pid);
+    if(lol) system("ps");
+    sleep(5);
+    exit(EXIT_SUCCESS);
+
+    pid_filho = wait(&estado);  //aguarda que um dos filhos aguarde e grava o exit status na variavel estado e devolve o pid do filho terminado
+}
+
+
+//aula 26/09/19
+void aula02(){
     //execl(executavel, comandos,...)
     //execv(executavel, [comandos])
     //corre main de outro executavel
@@ -89,5 +112,6 @@ void aula01(){
 int main(){
     //aula00();
     //comboios();
-    aula01();
+    //aula01();
+    //aula02();
 }
