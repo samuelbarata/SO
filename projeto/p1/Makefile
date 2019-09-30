@@ -27,6 +27,8 @@ main.o: main.c fs.h lib/bst.h
 clean:
 	@echo Cleaning...
 	rm -f lib/*.o *.o tecnicofs
+	##remover antes da entrega:
+		rm *.out
 
 run: tecnicofs
 	./tecnicofs

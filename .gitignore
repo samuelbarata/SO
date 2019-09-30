@@ -8,8 +8,10 @@ Icon?
 *.warnings
 *.swp
 core
+*.out
 
 #exec:
 foo*
 *.o
 test
+tecnicofs
