@@ -28,7 +28,7 @@ clean:
 	@echo Cleaning...
 	rm -f lib/*.o *.o tecnicofs
 	##remover antes da entrega{
-		rm *.out core
+		rm -f *.out core
 	#}
 
 run: tecnicofs
