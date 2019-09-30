@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include "fs.h"
 
 #define MAX_COMMANDS 150000
@@ -28,6 +29,10 @@ static void parseArgs (long argc, char* const argv[]){
         displayUsage(argv[0]);
     }
     inputfile = fopen(argv[1], "r");
+    if(!inputfile){
+        fprintf(stderr, "Input file not found:\n");
+        displayUsage(argv[0]);
+    }
     outputfile = fopen(argv[2], "a");
 }
 
@@ -84,7 +89,8 @@ void processInput(){
     fclose(inputfile);
 }
 
-void applyCommands(){
+float applyCommands(){    //devolve o tempo de execucao
+    float clock1, clock0 = clock();
     while(numberCommands > 0){
         const char* command = removeCommand();
         if (command == NULL){
@@ -122,17 +128,21 @@ void applyCommands(){
             }
         }
     }
+    clock1 = clock();
+    return (clock1-clock0)/CLOCKS_PER_SEC;
 }
 
 //argc = numero de argumentos; argv = lista de argumentos
 int main(int argc, char* argv[]) {
+    float tempoExec;
     parseArgs(argc, argv);
 
     fs = new_tecnicofs();
     processInput();
 
-    applyCommands();
-    print_tecnicofs_tree(outputfile, fs);
+    tempoExec = applyCommands();    
+    print_tecnicofs_tree(outputfile, fs, tempoExec);
+
 
     fflush(outputfile);
     fclose(outputfile);

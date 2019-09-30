@@ -27,8 +27,9 @@ main.o: main.c fs.h lib/bst.h
 clean:
 	@echo Cleaning...
 	rm -f lib/*.o *.o tecnicofs
-	##remover antes da entrega:
-		rm *.out
+	##remover antes da entrega{
+		rm *.out core
+	#}
 
 run: tecnicofs
-	./tecnicofs
+	./tecnicofs inputs/test1.txt myout.out
