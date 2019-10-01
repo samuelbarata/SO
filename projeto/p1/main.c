@@ -18,11 +18,13 @@ int headQueue = 0;
 
 FILE *inputfile, *outputfile;
 
+/*Mostra formato esperado de input*/
 static void displayUsage (const char* appName){
     printf("Usage: %s inputfile outputfile\n", appName);
     exit(EXIT_FAILURE);
 }
 
+/*Recebe os argumentos do programa*/
 static void parseArgs (long argc, char* const argv[]){
     if (argc != 3) {
         fprintf(stderr, "Invalid format:\n");
@@ -36,6 +38,7 @@ static void parseArgs (long argc, char* const argv[]){
     outputfile = fopen(argv[2], "a");
 }
 
+/*se ainda ha' espaço no vetor de comandos, adiciona mais um comando*/
 int insertCommand(char* data) {
     if(numberCommands != MAX_COMMANDS) {
         strcpy(inputCommands[numberCommands++], data);
@@ -44,6 +47,7 @@ int insertCommand(char* data) {
     return 0;
 }
 
+/*remove e devolve o primeiro comando da lista*/
 char* removeCommand() {
     if((numberCommands + 1)){
         numberCommands--;
@@ -52,14 +56,17 @@ char* removeCommand() {
     return NULL;
 }
 
+/*quando o comando introduzido n e' reconhecido*/
 void errorParse(){
     fprintf(stderr, "Error: command invalid\n");
     //exit(EXIT_FAILURE);
 }
 
+/*le e adiciona comandos ao vetor*/
 void processInput(){
     char line[MAX_INPUT_SIZE];
 
+    /*percorre as linhas do ficheiro e manda incerir comandos no vetor*/
     while (fgets(line, sizeof(line)/sizeof(char), inputfile)) {
         char token;
         char name[MAX_INPUT_SIZE];
@@ -90,8 +97,8 @@ void processInput(){
 }
 
 float applyCommands(){    //devolve o tempo de execucao
-    float clock1, clock0 = clock();
-    while(numberCommands > 0){
+    float clock0 = clock(), clock1;
+    while(numberCommands > 0){  //percorre os comandos no vetor
         const char* command = removeCommand();
         if (command == NULL){
             continue;
@@ -135,18 +142,25 @@ float applyCommands(){    //devolve o tempo de execucao
 //argc = numero de argumentos; argv = lista de argumentos
 int main(int argc, char* argv[]) {
     float tempoExec;
+    //recebe input
     parseArgs(argc, argv);
 
+    //cria novo fileSystem
     fs = new_tecnicofs();
+    //processa o input
     processInput();
 
-    tempoExec = applyCommands();    
+    //aplica os comandos e devolve o tempo de execucao
+    tempoExec = applyCommands();
+    //exporta a arvore e tempo de execução para um ficheiro    
     print_tecnicofs_tree(outputfile, fs, tempoExec);
 
-
+    //fecha o output
     fflush(outputfile);
     fclose(outputfile);
 
+    //liberta a memoria do fileSystem
     free_tecnicofs(fs);
+    
     exit(EXIT_SUCCESS);
 }
