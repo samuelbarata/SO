@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#define N 5
 
 /*
  ______________________________ 
@@ -103,10 +104,20 @@ void aula02(){
     ftell(fp);
     fflush(fp);                 //força as alterações a serem gravadas
     fclose(fp);
+}
 
+//aula 01/10/19
+void aula03(){
+    pthread_t tid[N];
+    for(int i = 0; i<N ;i++){
+        pthread_create(&tid[i],0,comboios,NULL);//criar tarefas
+    }
 
+    pthread_exit(); //sair
 
-    //pthread_create() ???
+    for(int i = 0; i<N; i++){
+        pthread_join(tid[i], NULL); //esperar pela tarefa X
+    }
 }
 
 int main(){
@@ -114,4 +125,5 @@ int main(){
     //comboios();
     //aula01();
     //aula02();
+    aula03();
 }
