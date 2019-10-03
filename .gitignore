@@ -9,9 +9,10 @@ Icon?
 *.swp
 core
 *.out
+output
 
 #exec:
 foo*
 *.o
 test
-tecnicofs
+tecnicofs*

@@ -14,8 +14,10 @@
 int numberThreads = 0;
 tecnicofs* fs;
 FILE *inputfile, *outputfile;
-pthread_mutex_t lock1;
 
+#ifdef DMUTEX
+pthread_mutex_t lock1;
+#endif
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -100,17 +102,20 @@ void processInput(){
     fclose(inputfile);
 }
 
-void applyCommands(){    //devolve o tempo de execucao
+void *applyCommands(){    //devolve o tempo de execucao 
     while(numberCommands > 0){  //percorre os comandos no vetor
+        char token;
+        char name[MAX_INPUT_SIZE];
+
+#ifdef DMUTEX
         pthread_mutex_lock(&lock1);
+#endif
         const char* command = removeCommand();
 
         if (command == NULL){
             continue;
         }
     
-        char token;
-        char name[MAX_INPUT_SIZE];
         int numTokens = sscanf(command, "%c %s", &token, name);
         if (numTokens != 2) {
             fprintf(stderr, "Error: invalid command in Queue\n");
@@ -122,34 +127,46 @@ void applyCommands(){    //devolve o tempo de execucao
         switch (token) {
             case 'c':
                 iNumber = obtainNewInumber(fs);
+                #ifdef DMUTEX
                 pthread_mutex_unlock(&lock1);
+                #endif
                 create(fs, name, iNumber);
+                
                 break;
             case 'l':
+                #ifdef DMUTEX
                 pthread_mutex_unlock(&lock1);
+                #endif
                 searchResult = lookup(fs, name);
+                
                 if(!searchResult)
                     printf("%s not found\n", name);
                 else
                     printf("%s found with inumber %d\n", name, searchResult);
                 break;
             case 'd':
+                #ifdef DMUTEX
                 pthread_mutex_unlock(&lock1);
+                #endif
                 delete(fs, name);
+                
                 break;
             default: { /* error */
+                #ifdef DMUTEX
+                pthread_mutex_unlock(&lock1);
+                #endif
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
             }
         }
     }
+    return NULL;
 }
 
 //argc = numero de argumentos; argv = lista de argumentos
 int main(int argc, char* argv[]) {
     float tempoExec, clock0, clock1;
-    pthread_t *tid=malloc(sizeof(pthread_t)*numberThreads);;
-
+    
     //recebe input
     parseArgs(argc, argv);
 
@@ -158,10 +175,14 @@ int main(int argc, char* argv[]) {
     //processa o input
     processInput();
 
+    
+#ifdef DMUTEX
     //pthread_mutex_lock(&lock1);
     //pthread_mutex_unlock(&lock1);
-
+    pthread_t *tid=malloc(sizeof(pthread_t)*numberThreads);
     pthread_mutex_init(&lock1, NULL);
+
+
     clock0=clock();
     for(int i=0; i<numberThreads;i++){
         pthread_create(&tid[i],0,applyCommands,NULL);
@@ -173,11 +194,18 @@ int main(int argc, char* argv[]) {
     }
     clock1=clock();
     free(tid);
+#endif
+
+#ifndef DMUTEX
+#ifndef DRWLOCK
+    clock0=clock();
+    applyCommands();
+    clock1=clock();
+#endif
+#endif
+
+    
     tempoExec = (clock1-clock0)/CLOCKS_PER_SEC;
-
-
-
-
 
     //exporta a arvore e tempo de execução para um ficheiro    
     print_tecnicofs_tree(outputfile, fs, tempoExec);
