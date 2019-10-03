@@ -49,7 +49,7 @@ int insertCommand(char* data) {
 
 /*remove e devolve o primeiro comando da lista*/
 char* removeCommand() {
-    if((numberCommands + 1)){
+    if(numberCommands > 0){
         numberCommands--;
         return inputCommands[headQueue++];  
     }
