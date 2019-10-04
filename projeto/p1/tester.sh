@@ -66,15 +66,14 @@ done
 
 errorCount=$(wc -l < ${error_file})
 errors=$(printf "%d" $errorCount)
+echo $1 ran with $2 threads $3 times
 if [ ${errors} == 0 ]; then
-    echo $*:
     echo "${YELLOW}╔════════════════╗${NC}"
     echo "${YELLOW}║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║${NC}"
     echo "${YELLOW}╚════════════════╝${NC}"
 
 else
     errors=$(printf "%03d" $errorCount)
-    echo $*:
     echo "${YELLOW}╔══════════════════════╗${NC}"
     echo "${YELLOW}║   ${RED}${BLINK}GIGANTIC FAILURE${NB}${YELLOW}   ║${NC}"
     echo "${YELLOW}║   ${RED}FAILED ${BLUE}${BLINK}${errors}${NB} ${RED}tasks${YELLOW}   ║${NC}"

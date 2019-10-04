@@ -49,7 +49,7 @@ clean:
 	@rm -f lib/*.o *.o tecnicofs*
 	@rm -f *.out core inputs/*.out
 	@rm -f -r output
-	@echo
+	@clear
 
 run: all
 	@./tester.sh tecnicofs-nosync 0 1
