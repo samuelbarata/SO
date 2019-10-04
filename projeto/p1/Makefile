@@ -3,14 +3,14 @@
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -lpthread
+CFLAGS =-Wall -std=gnu99 -I../ -lpthread -g
 LDFLAGS=-lm
 
 # A phony target is one that is not really the name of a file
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
 .PHONY: all clean run
 
-all: tecnicofs-nosync tecnicofs-mutex #tecnicofs-rwlock
+all: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
 
 
 tecnicofs-nosync: lib/bst.o fs.o main.o
@@ -18,6 +18,9 @@ tecnicofs-nosync: lib/bst.o fs.o main.o
 
 tecnicofs-mutex: lib/bst.o fs.o main-mu.o
 	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o fs.o main-mu.o
+
+tecnicofs-rwlock: lib/bst.o fs.o main-rw.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o fs.o main-rw.o
 
 
 
@@ -35,13 +38,16 @@ main.o: main.c fs.h lib/bst.h
 main-mu.o:
 	$(CC) $(CFLAGS) -o main-mu.o -c main.c -DMUTEX
 
+main-rw.o:
+	$(CC) $(CFLAGS) -o main-rw.o -c main.c -DRWLOCK
+
 
 clean:
 	@echo Cleaning...
-	rm -f lib/*.o *.o tecnicofs
+	rm -f lib/*.o *.o tecnicofs*
 	##remover antes da entrega{
 		rm -f *.out core output
 	#}
 
-run: tecnicofs-mutex
+run: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
 	./tecnicofs inputs/test4.txt myout.out 3

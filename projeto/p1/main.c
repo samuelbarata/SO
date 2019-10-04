@@ -11,13 +11,20 @@
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
 
+#ifdef DMUTEX
+    #define THREADS
+    pthread_mutex_t mutexLock1;
+#endif
+#ifdef RWLOCK
+    #define THREADS
+    pthread_rwlock_t rwLock1;
+#endif
+
+
 int numberThreads = 0;
 tecnicofs* fs;
 FILE *inputfile, *outputfile;
 
-#ifdef DMUTEX
-pthread_mutex_t lock1;
-#endif
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -107,9 +114,9 @@ void *applyCommands(){    //devolve o tempo de execucao
         char token;
         char name[MAX_INPUT_SIZE];
 
-#ifdef DMUTEX
-        pthread_mutex_lock(&lock1);
-#endif
+        #ifdef DMUTEX
+            pthread_mutex_lock(&mutexLock1);
+        #endif
         const char* command = removeCommand();
 
         if (command == NULL){
@@ -127,17 +134,20 @@ void *applyCommands(){    //devolve o tempo de execucao
         switch (token) {
             case 'c':
                 iNumber = obtainNewInumber(fs);
-                #ifdef DMUTEX
-                pthread_mutex_unlock(&lock1);
-                #endif
                 create(fs, name, iNumber);
+                
+                
+                #ifdef DMUTEX
+                    pthread_mutex_unlock(&mutexLock1);
+                #endif
+                
                 
                 break;
             case 'l':
-                #ifdef DMUTEX
-                pthread_mutex_unlock(&lock1);
-                #endif
                 searchResult = lookup(fs, name);
+                #ifdef DMUTEX
+                    pthread_mutex_unlock(&mutexLock1);
+                #endif
                 
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -145,15 +155,16 @@ void *applyCommands(){    //devolve o tempo de execucao
                     printf("%s found with inumber %d\n", name, searchResult);
                 break;
             case 'd':
-                #ifdef DMUTEX
-                pthread_mutex_unlock(&lock1);
-                #endif
                 delete(fs, name);
+                #ifdef DMUTEX
+                    pthread_mutex_unlock(&mutexLock1);
+                #endif
+                
                 
                 break;
             default: { /* error */
                 #ifdef DMUTEX
-                pthread_mutex_unlock(&lock1);
+                    pthread_mutex_unlock(&mutexLock1);
                 #endif
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
@@ -176,33 +187,36 @@ int main(int argc, char* argv[]) {
     processInput();
 
     
-#ifdef DMUTEX
-    //pthread_mutex_lock(&lock1);
-    //pthread_mutex_unlock(&lock1);
-    pthread_t *tid=malloc(sizeof(pthread_t)*numberThreads);
-    pthread_mutex_init(&lock1, NULL);
+    #ifdef DMUTEX
+        pthread_mutex_init(&mutexLock1, NULL);
+    #endif
+    #ifdef DRWLOCK
+        pthread_rwlock_init(&rwLock1, NULL);
+    #endif
+
+    #ifdef THREADS
+        pthread_t *tid=malloc(sizeof(pthread_t)*numberThreads);
+
+        clock0=clock();
+        //inicia $numberThreads Threads
+        for(int i=0; i<numberThreads;i++){
+            pthread_create(&tid[i], 0, applyCommands, NULL);
+        }
 
 
-    clock0=clock();
-    for(int i=0; i<numberThreads;i++){
-        pthread_create(&tid[i],0,applyCommands,NULL);
-    }
+        //espera que acabem todas as threads
+        for(int i = 0; i<numberThreads; i++){
+            pthread_join(tid[i], NULL);
+        }
+        
+        clock1=clock();
+        free(tid);
 
-    //espera q acabem as threads todas
-    for(int i = 0; i<numberThreads; i++){
-        pthread_join(tid[i], NULL);
-    }
-    clock1=clock();
-    free(tid);
-#endif
-
-#ifndef DMUTEX
-#ifndef DRWLOCK
-    clock0=clock();
-    applyCommands();
-    clock1=clock();
-#endif
-#endif
+    #else
+        clock0=clock();
+        applyCommands();
+        clock1=clock();
+    #endif
 
     
     tempoExec = (clock1-clock0)/CLOCKS_PER_SEC;
