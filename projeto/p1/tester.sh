@@ -40,10 +40,9 @@ test_dir='inputs'
 
 error_file="${prog_name}.error"
 touch $error_file
-echo
 for test_in in `ls -rS ${test_dir}/*`; do
-    test_out="output/${prog_name}/${test_in}.out"
-    test_stdout="output/${prog_name}/${test_in}.stdout"
+    test_out="output/${prog_name}/${test_in}.${threads}.out"
+    test_stdout="output/${prog_name}/${test_in}.${threads}.stdout"
     ./${prog_name} ${test_in} ${test_out} ${threads} > ${test_stdout} 2>${error_file}
     rv_student=$?
 
@@ -68,8 +67,7 @@ if [ ${errors} == 0 ]; then
     echo -e "${YELLOW}╔════════════════╗"
     echo -e "║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║"
     echo -e "╚════════════════╝${NC}"
-    echo
-    echo
+
 else
     errors=$(printf "%03d" $lol)
     echo -e "${YELLOW}╔══════════════════════╗"
