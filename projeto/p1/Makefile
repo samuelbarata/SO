@@ -51,7 +51,7 @@ clean:
 	@rm -f -r output
 	@echo
 
-run: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
+run: all
 	./tester.sh tecnicofs-nosync 0
 	./tester.sh tecnicofs-mutex 1
 	./tester.sh tecnicofs-mutex 2
