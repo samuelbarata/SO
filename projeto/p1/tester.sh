@@ -43,17 +43,17 @@ touch $error_file
 for test_in in `ls -rS ${test_dir}/*`; do
     test_out="output/${prog_name}/${test_in}.${threads}.out"
     test_stdout="output/${prog_name}/${test_in}.${threads}.stdout"
-    ./${prog_name} ${test_in} ${test_out} ${threads} > ${test_stdout} 2>${error_file}
+    ./${prog_name} ${test_in} ${test_out} ${threads} > ${test_stdout}
     rv_student=$?
 
     if [ ${rv_student} == 139 ]; then
-        echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
+        echo "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
         echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}"
         continue
     fi
 
     if [ ${rv_student} != 0 ]; then
-        echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
+        echo "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
         echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
         continue
     fi
@@ -61,19 +61,20 @@ for test_in in `ls -rS ${test_dir}/*`; do
 done > /dev/null # | pv -pt -i0.1 -l ${NOF} > /dev/null
 
 
-lol=$(wc -l < ${error_file})
-errors=$(printf "%d" $lol)
+errorCount=$(wc -l < ${error_file})
+errors=$(printf "%d" $errorCount)
 if [ ${errors} == 0 ]; then
-    echo -e "${YELLOW}╔════════════════╗"
-    echo -e "║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║"
-    echo -e "╚════════════════╝${NC}"
+    echo "${YELLOW}╔════════════════╗${NC}"
+    echo "${YELLOW}║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║${NC}"
+    echo "${YELLOW}╚════════════════╝${NC}"
 
 else
-    errors=$(printf "%03d" $lol)
-    echo -e "${YELLOW}╔══════════════════════╗"
-    echo -e "║   ${RED}${BLINK}GIGANTIC FAILURE${NB}${YELLOW}   ║"
-    echo -e "║   ${RED}FAILED ${BLUE}${BLINK}${errors}${NB} ${RED}tasks${YELLOW}   ║"
-    echo -e "╚══════════════════════╝${NC}"
+    errors=$(printf "%03d" $errorCount)
+    echo $*:
+    echo "${YELLOW}╔══════════════════════╗${NC}"
+    echo "${YELLOW}║   ${RED}${BLINK}GIGANTIC FAILURE${NB}${YELLOW}   ║${NC}"
+    echo "${YELLOW}║   ${RED}FAILED ${BLUE}${BLINK}${errors}${NB} ${RED}tasks${YELLOW}   ║${NC}"
+    echo "${YELLOW}╚══════════════════════╝${NC}"
     cat $error_file
     echo
 fi
