@@ -117,8 +117,9 @@ void *applyCommands(){    //devolve o tempo de execucao
         #ifdef DMUTEX
             pthread_mutex_lock(&mutexLock1);
         #endif
-        const char* command = removeCommand();
 
+        const char* command = removeCommand();
+        
         if (command == NULL){
             continue;
         }
@@ -134,17 +135,13 @@ void *applyCommands(){    //devolve o tempo de execucao
         switch (token) {
             case 'c':
                 iNumber = obtainNewInumber(fs);
-                
-                
-                
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
                 create(fs, name, iNumber);
-                
                 break;
+
             case 'l':
-                
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
@@ -154,18 +151,15 @@ void *applyCommands(){    //devolve o tempo de execucao
                 else
                     printf("%s found with inumber %d\n", name, searchResult);
                 break;
+
             case 'd':
-                
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
                 delete(fs, name);
-                
                 break;
+
             default: { /* error */
-                #ifdef DMUTEX
-                    pthread_mutex_unlock(&mutexLock1);
-                #endif
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
             }
@@ -202,7 +196,6 @@ int main(int argc, char* argv[]) {
         for(int i=0; i<numberThreads;i++){
             pthread_create(&tid[i], 0, applyCommands, NULL);
         }
-
 
         //espera que acabem todas as threads
         for(int i = 0; i<numberThreads; i++){
