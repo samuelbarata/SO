@@ -1,9 +1,9 @@
-# Makefile, versao 1
+# Makefile, versao 1.1
 # Sistemas Operativos, DEI/IST/ULisboa 2019-20
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -lpthread -g
+CFLAGS =-Wall -std=gnu99 -I../ -lpthread
 LDFLAGS=-lm
 
 # A phony target is one that is not really the name of a file
@@ -12,6 +12,8 @@ LDFLAGS=-lm
 
 all: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
 
+debug: CFLAGS += -g
+debug: all
 
 tecnicofs-nosync: lib/bst.o fs.o main.o
 	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-nosync lib/bst.o fs.o main.o
@@ -44,10 +46,10 @@ main-rw.o:
 
 clean:
 	@echo Cleaning...
-	rm -f lib/*.o *.o tecnicofs*
-	##remover antes da entrega{
-		rm -f *.out core output
-	#}
+	@rm -f lib/*.o *.o tecnicofs*
+	@rm -f *.out core inputs/*.out
+	@rm -f -r output
 
 run: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
-	./tecnicofs-mutex inputs/test4.txt myout.out 3
+	./tester.sh tecnicofs-nosync 0
+	./tester.sh tecnicofs-mutex 2
