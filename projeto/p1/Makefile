@@ -20,7 +20,7 @@ tecnicofs-mutex: lib/bst.o fs.o main-mu.o
 	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o fs.o main-mu.o
 
 tecnicofs-rwlock: lib/bst.o fs.o main-rw.o
-	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o fs.o main-rw.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-rwlock lib/bst.o fs.o main-rw.o
 
 
 
@@ -50,4 +50,4 @@ clean:
 	#}
 
 run: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
-	./tecnicofs inputs/test4.txt myout.out 3
+	./tecnicofs-mutex inputs/test4.txt myout.out 3

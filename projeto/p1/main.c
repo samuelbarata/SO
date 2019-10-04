@@ -134,32 +134,32 @@ void *applyCommands(){    //devolve o tempo de execucao
         switch (token) {
             case 'c':
                 iNumber = obtainNewInumber(fs);
-                create(fs, name, iNumber);
+                
                 
                 
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
-                
+                create(fs, name, iNumber);
                 
                 break;
             case 'l':
-                searchResult = lookup(fs, name);
+                
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
-                
+                searchResult = lookup(fs, name);
                 if(!searchResult)
                     printf("%s not found\n", name);
                 else
                     printf("%s found with inumber %d\n", name, searchResult);
                 break;
             case 'd':
-                delete(fs, name);
+                
                 #ifdef DMUTEX
                     pthread_mutex_unlock(&mutexLock1);
                 #endif
-                
+                delete(fs, name);
                 
                 break;
             default: { /* error */
