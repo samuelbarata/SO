@@ -8,9 +8,9 @@ NC='\033[0m'
 BOLD='\033[1m'
 NORM='\033[0m'
 
-if [ $# -lt 2 ] ; then
-    echo "Usage: $0 tecnicofs threads"
-    echo "Example: ${0} tecnicofs-mutex 2"
+if [ $# -lt 3 ] ; then
+    echo "Usage: $0 tecnicofs threads cycleCount"
+    echo "Example: ${0} tecnicofs-mutex 2 100"
     exit 1
 fi
 
@@ -35,35 +35,39 @@ mkdir output/tecnicofs-rwlock/inputs 2> /dev/null
 
 prog_name=$1
 threads=$2
+cycleCount=$(($3 + 1 - 1))
 
 test_dir='inputs'
 
 error_file="${prog_name}.error"
 touch $error_file
-for test_in in `ls -rS ${test_dir}/*`; do
-    test_out="output/${prog_name}/${test_in}.${threads}.out"
-    test_stdout="output/${prog_name}/${test_in}.${threads}.stdout"
-    ./${prog_name} ${test_in} ${test_out} ${threads} > ${test_stdout}
-    rv_student=$?
+for ((i=0 ; i<$cycleCount ; i++))
+do
+    for test_in in `ls -rS ${test_dir}/*`; do
+        test_out="output/${prog_name}/${test_in}.${threads}.out"
+        test_stdout="output/${prog_name}/${test_in}.${threads}.stdout"
+        ./${prog_name} ${test_in} ${test_out} ${threads} > ${test_stdout}
+        rv_student=$?
 
-    if [ ${rv_student} == 139 ]; then
-        echo "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
-        echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}"
-        continue
-    fi
+        if [ ${rv_student} == 139 ]; then
+            echo "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
+            echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}"
+            continue
+        fi
 
-    if [ ${rv_student} != 0 ]; then
-        echo "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
-        echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
-        continue
-    fi
+        if [ ${rv_student} != 0 ]; then
+            echo "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
+            echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
+            continue
+        fi
 
-done > /dev/null # | pv -pt -i0.1 -l ${NOF} > /dev/null
-
+    done > /dev/null
+done
 
 errorCount=$(wc -l < ${error_file})
 errors=$(printf "%d" $errorCount)
 if [ ${errors} == 0 ]; then
+    echo $*:
     echo "${YELLOW}╔════════════════╗${NC}"
     echo "${YELLOW}║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║${NC}"
     echo "${YELLOW}╚════════════════╝${NC}"

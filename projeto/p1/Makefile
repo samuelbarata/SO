@@ -52,13 +52,13 @@ clean:
 	@echo
 
 run: all
-	@./tester.sh tecnicofs-nosync 0
-	@./tester.sh tecnicofs-mutex 1
-	@./tester.sh tecnicofs-mutex 2
-	@./tester.sh tecnicofs-mutex 4
-	@./tester.sh tecnicofs-mutex 8
-	@./tester.sh tecnicofs-mutex 16
-	@./tester.sh tecnicofs-mutex 32
+	@./tester.sh tecnicofs-nosync 0 1
+	@./tester.sh tecnicofs-mutex 1 100
+	@./tester.sh tecnicofs-mutex 2 100
+	@./tester.sh tecnicofs-mutex 4 100
+	@./tester.sh tecnicofs-mutex 8 100
+	@./tester.sh tecnicofs-mutex 16 500
+	@./tester.sh tecnicofs-mutex 32 500
 	@#./tester.sh tecnicofs-rwlock 1
 	@#./tester.sh tecnicofs-rwlock 2 
 	@#./tester.sh tecnicofs-rwlock 4 
