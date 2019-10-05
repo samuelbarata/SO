@@ -1,3 +1,5 @@
+#!/bin/bash
+
 RED='\033[0;31m'
 GREEN='\033[0;92m'
 YELLOW='\033[0;33m'
@@ -50,13 +52,13 @@ do
         rv_student=$?
 
         if [ ${rv_student} == 139 ]; then
-            echo "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
+            echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}" >> $error_file
             echo -e "${RED}${BOLD}ERROR${NORM}${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in%.in}"
             continue
         fi
 
         if [ ${rv_student} != 0 ]; then
-            echo "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
+            echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!" >> $error_file
             echo -e "${test_in%.in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
             continue
         fi
@@ -66,18 +68,18 @@ done
 
 errorCount=$(wc -l < ${error_file})
 errors=$(printf "%d" $errorCount)
-echo $1 ran with $2 threads $3 times
+echo -e ${RED}$1${NC} ran with ${RED}$2${NC} threads ${RED}$3${NC} times
 if [ ${errors} == 0 ]; then
-    echo "${YELLOW}╔════════════════╗${NC}"
-    echo "${YELLOW}║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║${NC}"
-    echo "${YELLOW}╚════════════════╝${NC}"
+    echo -e "${YELLOW}╔════════════════╗${NC}"
+    echo -e "${YELLOW}║   ${GREEN}${BLINK}No errors!${NB}${YELLOW}   ║${NC}"
+    echo -e "${YELLOW}╚════════════════╝${NC}"
 
 else
     errors=$(printf "%03d" $errorCount)
-    echo "${YELLOW}╔══════════════════════╗${NC}"
-    echo "${YELLOW}║   ${RED}${BLINK}GIGANTIC FAILURE${NB}${YELLOW}   ║${NC}"
-    echo "${YELLOW}║   ${RED}FAILED ${BLUE}${BLINK}${errors}${NB} ${RED}tasks${YELLOW}   ║${NC}"
-    echo "${YELLOW}╚══════════════════════╝${NC}"
+    echo -e "${YELLOW}╔══════════════════════╗${NC}"
+    echo -e "${YELLOW}║   ${RED}${BLINK}GIGANTIC FAILURE${NB}${YELLOW}   ║${NC}"
+    echo -e "${YELLOW}║   ${RED}FAILED ${BLUE}${BLINK}${errors}${NB} ${RED}tasks${YELLOW}   ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════╝${NC}"
     cat $error_file
     echo
 fi
