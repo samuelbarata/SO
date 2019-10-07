@@ -11,15 +11,22 @@
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
 
+
+#define unlock_mutex(lock) do {} while (0)  //linha vai ser apagada pelo compilador pq nao faz nada
+#define lock_mutex(lock) do {} while (0)
+
+
 #ifdef DMUTEX
+    #define unlock_mutex(lock) pthread_mutex_unlock(lock)
+    #define lock_mutex(lock) pthread_mutex_lock(lock)
     #define THREADS
-    pthread_mutex_t mutexLock1;
-#endif
-#ifdef RWLOCK
+#elif RWLOCK
     #define THREADS
-    pthread_rwlock_t rwLock1;
+    
 #endif
 
+pthread_mutex_t mutexLock1;
+pthread_rwlock_t rwLock1;
 
 int numberThreads = 0;
 tecnicofs* fs;
@@ -114,9 +121,7 @@ void *applyCommands(){    //devolve o tempo de execucao
         char token;
         char name[MAX_INPUT_SIZE];
 
-        #ifdef DMUTEX
-            pthread_mutex_lock(&mutexLock1);
-        #endif
+        lock_mutex(&mutexLock1);
 
         const char* command = removeCommand();
         
@@ -135,16 +140,12 @@ void *applyCommands(){    //devolve o tempo de execucao
         switch (token) {
             case 'c':
                 iNumber = obtainNewInumber(fs);
-                #ifdef DMUTEX
-                    pthread_mutex_unlock(&mutexLock1);
-                #endif
+                unlock_mutex(&mutexLock1);
                 create(fs, name, iNumber);
                 break;
 
             case 'l':
-                #ifdef DMUTEX
-                    pthread_mutex_unlock(&mutexLock1);
-                #endif
+                unlock_mutex(&mutexLock1);
                 searchResult = lookup(fs, name);
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -153,9 +154,7 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'd':
-                #ifdef DMUTEX
-                    pthread_mutex_unlock(&mutexLock1);
-                #endif
+                unlock_mutex(&mutexLock1);
                 delete(fs, name);
                 break;
 
@@ -183,8 +182,7 @@ int main(int argc, char* argv[]) {
     
     #ifdef DMUTEX
         pthread_mutex_init(&mutexLock1, NULL);
-    #endif
-    #ifdef DRWLOCK
+    #elif DRWLOCK
         pthread_rwlock_init(&rwLock1, NULL);
     #endif
 
