@@ -7,31 +7,14 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include "fs.h"
-
-#define MAX_COMMANDS 150000
-#define MAX_INPUT_SIZE 100
-
-
-#define unlock_mutex(lock) do {} while (0)  //linha vai ser apagada pelo compilador pq nao faz nada
-#define lock_mutex(lock) do {} while (0)
-
-
-#ifdef DMUTEX
-    #define unlock_mutex(lock) pthread_mutex_unlock(lock)
-    #define lock_mutex(lock) pthread_mutex_lock(lock)
-    #define THREADS
-#elif RWLOCK
-    #define THREADS
-    
-#endif
-
-pthread_mutex_t mutexLock1;
-pthread_rwlock_t rwLock1;
+#include "definer.h"
 
 int numberThreads = 0;
 tecnicofs* fs;
 FILE *inputfile, *outputfile;
 
+pthread_mutex_t mutexLock1;
+pthread_rwlock_t rwLock1;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
