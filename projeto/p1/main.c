@@ -103,20 +103,20 @@ void *applyCommands(){    //devolve o tempo de execucao
     while(numberCommands > 0){  //percorre os comandos no vetor
         char token;
         char name[MAX_INPUT_SIZE];
-
         lock_mutex(&mutexLock1);
-
+        lock_rw(&rwLock1);
         const char* command = removeCommand();
         
         if (command == NULL){
             continue;
         }
-    
+
         int numTokens = sscanf(command, "%c %s", &token, name);
         if (numTokens != 2) {
             fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
         }
+
 
         int searchResult;
         int iNumber;
@@ -124,11 +124,13 @@ void *applyCommands(){    //devolve o tempo de execucao
             case 'c':
                 iNumber = obtainNewInumber(fs);
                 unlock_mutex(&mutexLock1);
+                unlock_rw(&rwLock1);
                 create(fs, name, iNumber);
                 break;
 
             case 'l':
                 unlock_mutex(&mutexLock1);
+                unlock_rw(&rwLock1);
                 searchResult = lookup(fs, name);
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -138,6 +140,7 @@ void *applyCommands(){    //devolve o tempo de execucao
 
             case 'd':
                 unlock_mutex(&mutexLock1);
+                unlock_rw(&rwLock1);
                 delete(fs, name);
                 break;
 
