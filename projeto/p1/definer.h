@@ -13,7 +13,7 @@
     #define lock_r(lock) nothing
     #define unlock_rw(lock) nothing
    
-#elif RWLOCK
+#elif DRWLOCK
     #define THREADS
 
     #define unlock_mutex(lock) nothing
@@ -30,4 +30,5 @@
     #define lock_rw(lock) nothing
     #define lock_r(lock) nothing
     #define unlock_rw(lock) nothing
+
 #endif

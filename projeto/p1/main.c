@@ -13,8 +13,8 @@ int numberThreads = 0;
 tecnicofs* fs;
 FILE *inputfile, *outputfile;
 
-pthread_mutex_t mutexLock1;
-pthread_rwlock_t rwLock1;
+pthread_mutex_t mutexLock1, mutexLock2, mutexLock3;
+pthread_rwlock_t rwLock1, rwLock2, rwLock3;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -103,10 +103,15 @@ void *applyCommands(){    //devolve o tempo de execucao
     while(numberCommands > 0){  //percorre os comandos no vetor
         char token;
         char name[MAX_INPUT_SIZE];
+        int searchResult;
+        int iNumber;
+
         lock_mutex(&mutexLock1);
-        lock_rw(&rwLock1);
+        lock_r(&rwLock1);
         const char* command = removeCommand();
-        
+        unlock_rw(&rwLock1);
+        unlock_mutex(&mutexLock1);
+
         if (command == NULL){
             continue;
         }
@@ -117,20 +122,27 @@ void *applyCommands(){    //devolve o tempo de execucao
             exit(EXIT_FAILURE);
         }
 
-
-        int searchResult;
-        int iNumber;
+        
         switch (token) {
             case 'c':
+                
+                lock_mutex(&mutexLock2);
+                lock_r(&rwLock2);
                 iNumber = obtainNewInumber(fs);
-                unlock_mutex(&mutexLock1);
-                unlock_rw(&rwLock1);
+                unlock_rw(&rwLock2);
+                unlock_mutex(&mutexLock2);
+                
+                
+                lock_mutex(&mutexLock3);
+                lock_rw(&rwLock3);
                 create(fs, name, iNumber);
+                unlock_rw(&rwLock3);
+                unlock_mutex(&mutexLock3);
+
                 break;
 
             case 'l':
-                unlock_mutex(&mutexLock1);
-                unlock_rw(&rwLock1);
+
                 searchResult = lookup(fs, name);
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -139,8 +151,7 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'd':
-                unlock_mutex(&mutexLock1);
-                unlock_rw(&rwLock1);
+
                 delete(fs, name);
                 break;
 
