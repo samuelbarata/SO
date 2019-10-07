@@ -69,7 +69,7 @@ void errorParse(){
 void processInput(){
     char line[MAX_INPUT_SIZE];
 
-    /*percorre as linhas do ficheiro e manda incerir comandos no vetor*/
+    /*percorre as linhas do ficheiro e manda inserir comandos no vetor*/
     while (fgets(line, sizeof(line)/sizeof(char), inputfile)) {
         char token;
         char name[MAX_INPUT_SIZE];
