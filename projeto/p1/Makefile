@@ -3,8 +3,8 @@
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../
-LDFLAGS=-lm -lpthread
+CFLAGS =-Wall -std=gnu99 -I../ -lpthread
+LDFLAGS=-lm
 
 # A phony target is one that is not really the name of a file
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
@@ -65,3 +65,6 @@ run: all
 	@./tester.sh tecnicofs-rwlock 8 100
 	@./tester.sh tecnicofs-rwlock 16 500
 	@./tester.sh tecnicofs-rwlock 32 500
+
+runn: all
+	./tester.sh tecnicofs-rwlock 10 200000000

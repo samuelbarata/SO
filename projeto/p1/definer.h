@@ -1,7 +1,14 @@
+/*
+    definer.h
+    Inclui os defines originais do main.c
+    Inclui as funcoes dos locks para cada uma das flags
+*/
+
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
 
-#define nothing do {} while (0) //linha vai ser apagada pelo compilador pq nao faz nada
+//ignorada pelo compilador (gcc)
+#define nothing do {} while (0)
 
 #ifdef DMUTEX
     #define THREADS

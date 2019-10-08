@@ -11,6 +11,7 @@
 
 int numberThreads = 0;
 tecnicofs* fs;
+
 FILE *inputfile, *outputfile;
 
 pthread_mutex_t mutexLock1, mutexLock2;
@@ -41,7 +42,7 @@ static void parseArgs (long argc, char* const argv[]){
     numberThreads = atoi(argv[3]);
 }
 
-/*se ainda ha' espaço no vetor de comandos, adiciona mais um comando*/
+/*se ainda ha espaço no vetor de comandos, adiciona mais um comando*/
 int insertCommand(char* data) {
     if(numberCommands != MAX_COMMANDS) {
         strcpy(inputCommands[numberCommands++], data);
@@ -121,11 +122,9 @@ void *applyCommands(){    //devolve o tempo de execucao
             fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
         }
-
         
         switch (token) {
             case 'c':
-                
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
                 iNumber = obtainNewInumber(fs);
@@ -149,7 +148,6 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'd':
-
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
                 delete(fs, name);
@@ -166,7 +164,6 @@ void *applyCommands(){    //devolve o tempo de execucao
     return NULL;
 }
 
-//argc = numero de argumentos; argv = lista de argumentos
 int main(int argc, char* argv[]) {
     float tempoExec, clock0, clock1;
     
@@ -188,12 +185,17 @@ int main(int argc, char* argv[]) {
     #endif
 
     #ifdef THREADS
-        pthread_t *tid=malloc(sizeof(pthread_t)*numberThreads);
+        //se forem 0 threads passa para um, caso contrario codigo nao corre
+        if(!numberThreads)
+            numberThreads++;
+        
+        pthread_t *tid=malloc(sizeof(pthread_t) * numberThreads);
 
         clock0=clock();
         //inicia $numberThreads Threads
-        for(int i=0; i<numberThreads;i++){
-            pthread_create(&tid[i], 0, applyCommands, NULL);
+        for(int i=0; i<numberThreads; i++){
+            if(pthread_create(&tid[i], 0, applyCommands, NULL) != 0)
+                fprintf(stderr, "Error creating thread\n");
         }
 
         //espera que acabem todas as threads
@@ -203,13 +205,11 @@ int main(int argc, char* argv[]) {
         
         clock1=clock();
         free(tid);
-
     #else
         clock0=clock();
         applyCommands();
         clock1=clock();
     #endif
-
     
     tempoExec = (clock1-clock0)/CLOCKS_PER_SEC;
 
