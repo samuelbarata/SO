@@ -13,8 +13,8 @@ int numberThreads = 0;
 tecnicofs* fs;
 FILE *inputfile, *outputfile;
 
-pthread_mutex_t mutexLock1, mutexLock2, mutexLock3;
-pthread_rwlock_t rwLock1, rwLock2, rwLock3;
+pthread_mutex_t mutexLock1, mutexLock2;
+pthread_rwlock_t rwLock1, rwLock2;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -107,7 +107,7 @@ void *applyCommands(){    //devolve o tempo de execucao
         int iNumber;
 
         lock_mutex(&mutexLock1);
-        lock_r(&rwLock1);
+        lock_rw(&rwLock1);
         const char* command = removeCommand();
         unlock_rw(&rwLock1);
         unlock_mutex(&mutexLock1);
@@ -127,23 +127,21 @@ void *applyCommands(){    //devolve o tempo de execucao
             case 'c':
                 
                 lock_mutex(&mutexLock2);
-                lock_r(&rwLock2);
+                lock_rw(&rwLock2);
                 iNumber = obtainNewInumber(fs);
+                create(fs, name, iNumber);
                 unlock_rw(&rwLock2);
                 unlock_mutex(&mutexLock2);
-                
-                
-                lock_mutex(&mutexLock3);
-                lock_rw(&rwLock3);
-                create(fs, name, iNumber);
-                unlock_rw(&rwLock3);
-                unlock_mutex(&mutexLock3);
 
                 break;
 
             case 'l':
-
+                lock_mutex(&mutexLock2);
+                lock_r(&rwLock2);
                 searchResult = lookup(fs, name);
+                unlock_rw(&rwLock2);
+                unlock_mutex(&mutexLock2);
+
                 if(!searchResult)
                     printf("%s not found\n", name);
                 else
@@ -152,7 +150,11 @@ void *applyCommands(){    //devolve o tempo de execucao
 
             case 'd':
 
+                lock_mutex(&mutexLock2);
+                lock_rw(&rwLock2);
                 delete(fs, name);
+                unlock_rw(&rwLock2);
+                unlock_mutex(&mutexLock2);
                 break;
 
             default: { /* error */
@@ -179,8 +181,10 @@ int main(int argc, char* argv[]) {
     
     #ifdef DMUTEX
         pthread_mutex_init(&mutexLock1, NULL);
+        pthread_mutex_init(&mutexLock2, NULL);
     #elif DRWLOCK
         pthread_rwlock_init(&rwLock1, NULL);
+        pthread_rwlock_init(&rwLock2, NULL);
     #endif
 
     #ifdef THREADS

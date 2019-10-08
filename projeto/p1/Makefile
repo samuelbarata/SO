@@ -3,8 +3,8 @@
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -lpthread
-LDFLAGS=-lm
+CFLAGS =-Wall -std=gnu99 -I../
+LDFLAGS=-lm -lpthread
 
 # A phony target is one that is not really the name of a file
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
