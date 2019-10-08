@@ -111,8 +111,7 @@ void *applyCommands(){    //devolve o tempo de execucao
         lock_mutex(&mutexLock1);
         lock_rw(&rwLock1);
         const char* command = removeCommand();
-        unlock_rw(&rwLock1);
-        unlock_mutex(&mutexLock1);
+        
 
         if (command == NULL){
             continue;
@@ -126,9 +125,13 @@ void *applyCommands(){    //devolve o tempo de execucao
         
         switch (token) {
             case 'c':
+                
+                iNumber = obtainNewInumber(fs);
+                unlock_rw(&rwLock1);
+                unlock_mutex(&mutexLock1);
+
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
-                iNumber = obtainNewInumber(fs);
                 create(fs, name, iNumber);
                 unlock_rw(&rwLock2);
                 unlock_mutex(&mutexLock2);
@@ -136,6 +139,9 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'l':
+                unlock_rw(&rwLock1);
+                unlock_mutex(&mutexLock1);
+
                 lock_mutex(&mutexLock2);
                 lock_r(&rwLock2);
                 searchResult = lookup(fs, name);
@@ -149,6 +155,9 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'd':
+                unlock_rw(&rwLock1);
+                unlock_mutex(&mutexLock1);
+                
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
                 delete(fs, name);
