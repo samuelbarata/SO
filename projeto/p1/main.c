@@ -114,6 +114,8 @@ void *applyCommands(){    //devolve o tempo de execucao
         
 
         if (command == NULL){
+            unlock_rw(&rwLock1);
+            unlock_mutex(&mutexLock1);
             continue;
         }
 
@@ -157,7 +159,7 @@ void *applyCommands(){    //devolve o tempo de execucao
             case 'd':
                 unlock_rw(&rwLock1);
                 unlock_mutex(&mutexLock1);
-                
+
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
                 delete(fs, name);
