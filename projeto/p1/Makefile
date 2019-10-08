@@ -3,8 +3,8 @@
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -lpthread
-LDFLAGS=-lm
+CFLAGS =-Wall -std=gnu99 -I../
+LDFLAGS=-lm -pthread
 
 # A phony target is one that is not really the name of a file
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
@@ -37,11 +37,11 @@ fs.o: fs.c fs.h lib/bst.h
 main.o: main.c fs.h lib/bst.h
 	$(CC) $(CFLAGS) -o main.o -c main.c
 
-main-mu.o:
-	$(CC) $(CFLAGS) -o main-mu.o -c main.c -DMUTEX
+main-mu.o: main.c fs.h lib/bst.h
+	$(CC) $(CFLAGS) -DMUTEX -o main-mu.o -c main.c 
 
-main-rw.o:
-	$(CC) $(CFLAGS) -o main-rw.o -c main.c -DRWLOCK
+main-rw.o: main.c fs.h lib/bst.h
+	$(CC) $(CFLAGS) -DRWLOCK -o main-rw.o -c main.c
 
 
 clean:

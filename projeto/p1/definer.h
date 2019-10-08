@@ -10,7 +10,7 @@
 //ignorada pelo compilador (gcc)
 #define nothing do {} while (0)
 
-#ifdef DMUTEX
+#ifdef MUTEX
     #define THREADS
 
     #define unlock_mutex(lock) pthread_mutex_unlock(lock)
@@ -20,7 +20,7 @@
     #define lock_r(lock) nothing
     #define unlock_rw(lock) nothing
    
-#elif DRWLOCK
+#elif RWLOCK
     #define THREADS
 
     #define unlock_mutex(lock) nothing

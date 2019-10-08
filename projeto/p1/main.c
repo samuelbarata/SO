@@ -6,8 +6,9 @@
 #include <time.h>
 #include <pthread.h>
 #include <sys/types.h>
-#include "fs.h"
 #include "definer.h"
+#include "fs.h"
+
 
 int numberThreads = 0;
 tecnicofs* fs;
