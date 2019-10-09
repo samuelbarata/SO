@@ -52,7 +52,7 @@ clean:
 	@clear
 
 run: all
-	@./tester.sh tecnicofs-nosync 0 1
+	@./tester.sh tecnicofs-nosync 0 100
 	@./tester.sh tecnicofs-mutex 1 100
 	@./tester.sh tecnicofs-mutex 2 100
 	@./tester.sh tecnicofs-mutex 4 100
@@ -65,6 +65,7 @@ run: all
 	@./tester.sh tecnicofs-rwlock 8 100
 	@./tester.sh tecnicofs-rwlock 16 500
 	@./tester.sh tecnicofs-rwlock 32 500
+	make run
 
 runn: all
-	./tester.sh tecnicofs-rwlock 10 200000000
+	./tester.sh tecnicofs-nosync 10 1

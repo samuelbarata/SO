@@ -39,7 +39,6 @@ int lookup(tecnicofs* fs, char *name){
 	return 0;
 }
 
-void print_tecnicofs_tree(FILE * fp, tecnicofs *fs, float tempoExec){
+void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
 	print_tree(fp, fs->bstRoot);
-	fprintf(fp, "\nTecnicoFS completed in %.4f seconds.\n", tempoExec);
 }

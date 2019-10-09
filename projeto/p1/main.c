@@ -196,38 +196,34 @@ int main(int argc, char* argv[]) {
         pthread_rwlock_init(&rwLock2, NULL);
     #endif
 
-    #ifdef THREADS
-        //se forem 0 threads passa para um, caso contrario codigo nao corre
-        if(!numberThreads)
-            numberThreads++;
-        
-        pthread_t *tid=malloc(sizeof(pthread_t) * numberThreads);
 
-        clock0=clock();
-        //inicia $numberThreads Threads
-        for(int i=0; i<numberThreads; i++){
-            if(pthread_create(&tid[i], 0, applyCommands, NULL) != 0)
-                fprintf(stderr, "Error creating thread\n");
-        }
+    //se forem 0 threads passa para um, caso contrario codigo nao corre
+    if(!numberThreads)
+        numberThreads++;
+    
+    pthread_t tid[numberThreads];
 
-        //espera que acabem todas as threads
-        for(int i = 0; i<numberThreads; i++){
-            pthread_join(tid[i], NULL);
-        }
-        
-        clock1=clock();
-        free(tid);
-    #else
-        clock0=clock();
-        applyCommands();
-        clock1=clock();
-    #endif
+    clock0=clock();
+    //inicia $numberThreads Threads
+    for(int i=0; i<numberThreads; i++){
+        if(pthread_create(&tid[i], 0, applyCommands, NULL) != 0)
+            fprintf(stderr, "Error creating thread\n");
+    }
+
+    //espera que acabem todas as threads
+    for(int i = 0; i<numberThreads; i++){
+        pthread_join(tid[i], NULL);
+    }
+    
+    clock1=clock();
     
     tempoExec = (clock1-clock0)/CLOCKS_PER_SEC;
 
     //exporta a arvore e tempo de execução para um ficheiro    
-    print_tecnicofs_tree(outputfile, fs, tempoExec);
-
+    print_tecnicofs_tree(outputfile, fs);
+    
+    fprintf(stdout, "\nTecnicoFS completed in %.4f seconds.\n", tempoExec);
+    
     //fecha o output
     fflush(outputfile);
     fclose(outputfile);
