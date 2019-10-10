@@ -6,6 +6,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include "definer.h"
 #include "fs.h"
 
@@ -177,8 +178,8 @@ void *applyCommands(){    //devolve o tempo de execucao
 }
 
 int main(int argc, char* argv[]) {
-    float tempoExec, clock0, clock1;
-    
+    struct timeval clock0, clock1;
+
     //recebe input
     parseArgs(argc, argv);
 
@@ -203,7 +204,7 @@ int main(int argc, char* argv[]) {
     
     pthread_t tid[numberThreads];
 
-    clock0=clock();
+    gettimeofday(&clock0, NULL);
     //inicia $numberThreads Threads
     for(int i=0; i<numberThreads; i++){
         if(pthread_create(&tid[i], 0, applyCommands, NULL) != 0)
@@ -214,16 +215,14 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i<numberThreads; i++){
         pthread_join(tid[i], NULL);
     }
-    
-    clock1=clock();
-    
-    tempoExec = (clock1-clock0)/CLOCKS_PER_SEC;
 
-    //exporta a arvore e tempo de execução para um ficheiro    
+    gettimeofday(&clock1, NULL);
+ 
+    //exporta a arvore para um ficheiro
     print_tecnicofs_tree(outputfile, fs);
     
-    fprintf(stdout, "\nTecnicoFS completed in %.4f seconds.\n", tempoExec);
-    
+    fprintf(stdout, "\nTecnicoFS completed in %ld.%.4ld seconds.\n", clock1.tv_sec - clock0.tv_sec, (clock1.tv_usec-clock0.tv_usec)/100);
+
     //fecha o output
     fflush(outputfile);
     fclose(outputfile);
