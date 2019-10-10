@@ -179,15 +179,12 @@ void *applyCommands(){    //devolve o tempo de execucao
 
 int main(int argc, char* argv[]) {
     struct timeval clock0, clock1;
-
     //recebe input
     parseArgs(argc, argv);
-
     //cria novo fileSystem
     fs = new_tecnicofs();
     //processa o input
     processInput();
-
     
     #ifdef DMUTEX
         pthread_mutex_init(&mutexLock1, NULL);
@@ -197,8 +194,7 @@ int main(int argc, char* argv[]) {
         pthread_rwlock_init(&rwLock2, NULL);
     #endif
 
-
-    //se forem 0 threads passa para um, caso contrario codigo nao corre
+    //se forem 0 threads passa para um
     if(!numberThreads)
         numberThreads++;
     
@@ -221,7 +217,8 @@ int main(int argc, char* argv[]) {
     //exporta a arvore para um ficheiro
     print_tecnicofs_tree(outputfile, fs);
     
-    fprintf(stdout, "\nTecnicoFS completed in %ld.%.4ld seconds.\n", clock1.tv_sec - clock0.tv_sec, (clock1.tv_usec-clock0.tv_usec)/100);
+    fprintf(stdout, "\nTecnicoFS completed in %ld.%04ld seconds.\n",
+    clock1.tv_sec - clock0.tv_sec, (clock1.tv_usec-clock0.tv_usec)/100);
 
     //fecha o output
     fflush(outputfile);
