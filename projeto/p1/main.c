@@ -217,8 +217,11 @@ int main(int argc, char* argv[]) {
     //exporta a arvore para um ficheiro
     print_tecnicofs_tree(outputfile, fs);
     
-    fprintf(stdout, "\nTecnicoFS completed in %ld.%04ld seconds.\n",
-    clock1.tv_sec - clock0.tv_sec, (clock1.tv_usec-clock0.tv_usec)/100);
+    double elapsed = (clock1.tv_sec - clock0.tv_sec) + 
+              ((clock1.tv_usec - clock0.tv_usec)/1000000.0);
+
+    fprintf(stdout, "\nTecnicoFS completed in %.04f seconds.\n",
+    elapsed);
 
     //fecha o output
     fflush(outputfile);
