@@ -52,24 +52,24 @@ fullclean:
 	@echo Cleaning...
 	@rm -f lib/*.o *.o tecnicofs*
 	@rm -f *.out core inputs/*.out
-	@rm -f -r output
+	@rm -f -r output/*
 	@clear
 
 run: all
-	@./tester.sh tecnicofs-nosync 0 10
-	@./tester.sh tecnicofs-mutex 1 10
-	@./tester.sh tecnicofs-mutex 2 10
-	@./tester.sh tecnicofs-mutex 4 10
-	@./tester.sh tecnicofs-mutex 8 10
-	@./tester.sh tecnicofs-mutex 16 50
-	@./tester.sh tecnicofs-mutex 32 50
-	@./tester.sh tecnicofs-rwlock 1 10
-	@./tester.sh tecnicofs-rwlock 2 10
-	@./tester.sh tecnicofs-rwlock 4 10
-	@./tester.sh tecnicofs-rwlock 8 10
-	@./tester.sh tecnicofs-rwlock 16 50
-	@./tester.sh tecnicofs-rwlock 32 50
+	@./tester.sh tecnicofs-nosync 0 100
+	@./tester.sh tecnicofs-mutex 1 100
+	@./tester.sh tecnicofs-mutex 2 100
+	@./tester.sh tecnicofs-mutex 4 100
+	@./tester.sh tecnicofs-mutex 8 100
+	@./tester.sh tecnicofs-mutex 16 500
+	@./tester.sh tecnicofs-mutex 32 500
+	@./tester.sh tecnicofs-rwlock 1 100
+	@./tester.sh tecnicofs-rwlock 2 100
+	@./tester.sh tecnicofs-rwlock 4 100
+	@./tester.sh tecnicofs-rwlock 8 100
+	@./tester.sh tecnicofs-rwlock 16 500
+	@./tester.sh tecnicofs-rwlock 32 500
 	@#make run
 
 irun: all
-	./tecnicofs-mutex inputs/s_test_001.txt myout.out 1
+	./tecnicofs-mutex inputs/test03.txt myout.out 9

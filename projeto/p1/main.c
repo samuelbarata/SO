@@ -220,7 +220,7 @@ int main(int argc, char* argv[]) {
     double elapsed = (clock1.tv_sec - clock0.tv_sec) + 
               ((clock1.tv_usec - clock0.tv_usec)/1000000.0);
 
-    fprintf(stdout, "\nTecnicoFS completed in %.04f seconds.\n",
+    fprintf(stdout, "TecnicoFS completed in %.04f seconds.\n",
     elapsed);
 
     //fecha o output
