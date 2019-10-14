@@ -3,21 +3,26 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hash.c"
 
 int obtainNewInumber(tecnicofs* fs) {
 	int newInumber = ++(fs->nextINumber);
 	return newInumber;
 }
 
-tecnicofs* new_tecnicofs(){
-	tecnicofs*fs = malloc(sizeof(tecnicofs));
-	if (!fs) {
-		perror("failed to allocate tecnicofs");
-		exit(EXIT_FAILURE);
+tecnicofs** new_tecnicofs(){
+	tecnicofs* hashtable[numberBuckets];
+	for (i = 0; i < numberBuckets; i++){
+		tecnicofs*fs = malloc(sizeof(tecnicofs));
+		if (!fs) {
+			perror("failed to allocate tecnicofs");
+			exit(EXIT_FAILURE);
+		}
+		fs->bstRoot = NULL;
+		fs->nextINumber = 0;
+		hashtable[i] = fs;
 	}
-	fs->bstRoot = NULL;
-	fs->nextINumber = 0;
-	return fs;
+	return hashtable;
 }
 
 void free_tecnicofs(tecnicofs* fs){
@@ -26,19 +31,24 @@ void free_tecnicofs(tecnicofs* fs){
 }
 
 void create(tecnicofs* fs, char *name, int inumber){
-	fs->bstRoot = insert(fs->bstRoot, name, inumber);
+	int hashPlace = hash(name, numberBuckets);
+	fs[hashPlace]->bstRoot = insert(fs->bstRoot, name, inumber);
 }
 
 void delete(tecnicofs* fs, char *name){
-	fs->bstRoot = remove_item(fs->bstRoot, name);
+	int hashPlace = hash(name, numberBuckets);
+	fs[hashPlace]->bstRoot = remove_item(fs->bstRoot, name);
 }
 
 int lookup(tecnicofs* fs, char *name){
-	node* searchNode = search(fs->bstRoot, name);
+	hashPlace = hash(name, numberBuckets);
+	node* searchNode = search(fs[hashPlace]->bstRoot, name);
 	if ( searchNode ) return searchNode->inumber;
 	return 0;
 }
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
-	print_tree(fp, fs->bstRoot);
+	for (i = 0; i < numberBuckets; i++){
+		print_tree(fp, fs->bstRoot);
+	}
 }

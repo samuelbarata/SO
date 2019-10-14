@@ -31,7 +31,7 @@ static void displayUsage (const char* appName){
 
 /*Recebe os argumentos do programa*/
 static void parseArgs (long argc, char* const argv[]){
-    if (argc != 4) {
+    if (argc != 5) {
         fprintf(stderr, "Invalid format:\n");
         displayUsage(argv[0]);
     }
@@ -42,6 +42,7 @@ static void parseArgs (long argc, char* const argv[]){
     }
     outputfile = fopen(argv[2], "w");
     numberThreads = atoi(argv[3]);
+    numberBuckets = atoi(argv[4]);
 }
 
 /*se ainda ha espaço no vetor de comandos, adiciona mais um comando*/
