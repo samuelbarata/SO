@@ -28,8 +28,8 @@ tecnicofs** new_tecnicofs(){
 void free_tecnicofs(tecnicofs** fs){
 	for(int i = 0; i<numberBuckets; i++){
 		free_tree(fs[i]->bstRoot);
-		free(fs[i]);
 	}
+	free(fs);
 }
 
 void create(tecnicofs** fs, char *name, int inumber){
