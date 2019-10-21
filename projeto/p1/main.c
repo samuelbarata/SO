@@ -9,8 +9,9 @@
 #include <sys/time.h>
 #include "definer.h"
 #include "fs.h"
+#include "lib/hash.h"
 
-tecnicofs* fs;
+tecnicofs** fs;
 
 FILE *inputfile, *outputfile;
 
@@ -107,6 +108,7 @@ void *applyCommands(){    //devolve o tempo de execucao
         char name[MAX_INPUT_SIZE];
         int searchResult;
         int iNumber;
+        int hashe;
 
         lock_mutex(&mutexLock1);
         lock_rw(&rwLock1);
@@ -132,9 +134,12 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwLock1);
                 unlock_mutex(&mutexLock1);
 
+                hashe = hash(name, numberBuckets);
+
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
-                create(fs, name, iNumber);
+
+                create(fs[hashe], name, iNumber);
                 unlock_rw(&rwLock2);
                 unlock_mutex(&mutexLock2);
 
@@ -144,9 +149,12 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwLock1);
                 unlock_mutex(&mutexLock1);
 
+                hashe = hash(name, numberBuckets);
+
                 lock_mutex(&mutexLock2);
                 lock_r(&rwLock2);
-                searchResult = lookup(fs, name);
+
+                searchResult = lookup(fs[hashe], name);
                 unlock_rw(&rwLock2);
                 unlock_mutex(&mutexLock2);
 
@@ -160,9 +168,13 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwLock1);
                 unlock_mutex(&mutexLock1);
 
+                hashe = hash(name, numberBuckets);
+
                 lock_mutex(&mutexLock2);
                 lock_rw(&rwLock2);
-                delete(fs, name);
+
+
+                delete(fs[hashe], name);
                 unlock_rw(&rwLock2);
                 unlock_mutex(&mutexLock2);
                 break;
