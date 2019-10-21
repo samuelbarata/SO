@@ -12,6 +12,7 @@ LDFLAGS=-lm -pthread
 
 all: tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
 
+debug: fullclean
 debug: CFLAGS += -g
 debug: all
 
@@ -72,4 +73,4 @@ run: all
 	@#make run
 
 irun: all
-	./tecnicofs-mutex inputs/test03.txt myout.out 9
+	./tecnicofs-mutex inputs/test03.txt myout.out 9 2

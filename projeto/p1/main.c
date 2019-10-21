@@ -197,8 +197,8 @@ int main(int argc, char* argv[]) {
     #endif
 
     //se forem 0 threads passa para um
-    if(!numberThreads)
-        numberThreads++;
+    if(numberThreads < 0)
+        numberThreads=1;
     
     pthread_t tid[numberThreads];
 
