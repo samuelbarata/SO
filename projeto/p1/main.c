@@ -10,8 +10,6 @@
 #include "definer.h"
 #include "fs.h"
 
-
-int numberThreads = 0;
 tecnicofs* fs;
 
 FILE *inputfile, *outputfile;
@@ -25,7 +23,7 @@ int headQueue = 0;
 
 /*Mostra formato esperado de input*/
 static void displayUsage (const char* appName){
-    printf("Usage: %s inputfile outputfile numthreads\n", appName);
+    printf("Usage: %s inputfile outputfile numthreads numbuckets\n", appName);
     exit(EXIT_FAILURE);
 }
 

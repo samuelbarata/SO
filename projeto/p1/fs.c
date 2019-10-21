@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "hash.c"
+#include "lib/hash.c"
+#include "definer.h"
 
 int obtainNewInumber(tecnicofs* fs) {
 	int newInumber = ++(fs->nextINumber);

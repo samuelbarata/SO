@@ -4,8 +4,12 @@
     Inclui as funcoes dos locks para cada uma das flags
 */
 
+#ifndef DEFINER
+#define DEFINER
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
+
+int numberThreads, numberBuckets;
 
 //ignorada pelo compilador (gcc)
 #define nothing do {} while (0)
@@ -26,4 +30,5 @@
     #define lock_rw(lock) nothing
     #define lock_r(lock) nothing
     #define unlock_rw(lock) nothing
+#endif
 #endif
