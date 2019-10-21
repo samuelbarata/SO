@@ -15,8 +15,8 @@ tecnicofs** fs;
 
 FILE *inputfile, *outputfile;
 
-pthread_mutex_t mutexLock1, mutexLock2;
-pthread_rwlock_t rwLock1, rwLock2;
+pthread_mutex_t mutexVectorLock, treeMutexLock;
+pthread_rwlock_t rwVectorLock, treeRwLock;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -110,14 +110,14 @@ void *applyCommands(){    //devolve o tempo de execucao
         int iNumber;
         int hashe;
 
-        lock_mutex(&mutexLock1);
-        lock_rw(&rwLock1);
+        lock_mutex(&mutexVectorLock);
+        lock_rw(&rwVectorLock);
         const char* command = removeCommand();
         
 
         if (command == NULL){
-            unlock_rw(&rwLock1);
-            unlock_mutex(&mutexLock1);
+            unlock_rw(&rwVectorLock);
+            unlock_mutex(&mutexVectorLock);
             continue;
         }
 
@@ -129,34 +129,31 @@ void *applyCommands(){    //devolve o tempo de execucao
         
         switch (token) {
             case 'c':
-                
-                iNumber = obtainNewInumber(fs);
-                unlock_rw(&rwLock1);
-                unlock_mutex(&mutexLock1);
-
                 hashe = hash(name, numberBuckets);
-
-                lock_mutex(&mutexLock2);
-                lock_rw(&rwLock2);
+                iNumber = obtainNewInumber(fs[hashe]);
+                unlock_rw(&rwVectorLock);
+                unlock_mutex(&mutexVectorLock);
+                lock_mutex(&treeMutexLock);
+                lock_rw(&treeRwLock);
 
                 create(fs[hashe], name, iNumber);
-                unlock_rw(&rwLock2);
-                unlock_mutex(&mutexLock2);
+                unlock_rw(&treeRwLock);
+                unlock_mutex(&treeMutexLock);
 
                 break;
 
             case 'l':
-                unlock_rw(&rwLock1);
-                unlock_mutex(&mutexLock1);
+                unlock_rw(&rwVectorLock);
+                unlock_mutex(&mutexVectorLock);
 
                 hashe = hash(name, numberBuckets);
 
-                lock_mutex(&mutexLock2);
-                lock_r(&rwLock2);
+                lock_mutex(&treeMutexLock);
+                lock_r(&treeRwLock);
 
                 searchResult = lookup(fs[hashe], name);
-                unlock_rw(&rwLock2);
-                unlock_mutex(&mutexLock2);
+                unlock_rw(&treeRwLock);
+                unlock_mutex(&treeMutexLock);
 
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -165,18 +162,18 @@ void *applyCommands(){    //devolve o tempo de execucao
                 break;
 
             case 'd':
-                unlock_rw(&rwLock1);
-                unlock_mutex(&mutexLock1);
+                unlock_rw(&rwVectorLock);
+                unlock_mutex(&mutexVectorLock);
 
                 hashe = hash(name, numberBuckets);
 
-                lock_mutex(&mutexLock2);
-                lock_rw(&rwLock2);
+                lock_mutex(&treeMutexLock);
+                lock_rw(&treeRwLock);
 
 
                 delete(fs[hashe], name);
-                unlock_rw(&rwLock2);
-                unlock_mutex(&mutexLock2);
+                unlock_rw(&treeRwLock);
+                unlock_mutex(&treeMutexLock);
                 break;
 
             default: { /* error */
@@ -198,11 +195,11 @@ int main(int argc, char* argv[]) {
     processInput();
     
     #ifdef DMUTEX
-        pthread_mutex_init(&mutexLock1, NULL);
-        pthread_mutex_init(&mutexLock2, NULL);
+        pthread_mutex_init(&mutexVectorLock, NULL);
+        pthread_mutex_init(&treeMutexLock, NULL);
     #elif DRWLOCK
-        pthread_rwlock_init(&rwLock1, NULL);
-        pthread_rwlock_init(&rwLock2, NULL);
+        pthread_rwlock_init(&rwVectorLock, NULL);
+        pthread_rwlock_init(&treeRwLock, NULL);
     #endif
 
     //se forem 0 threads passa para um
