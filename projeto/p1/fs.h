@@ -1,10 +1,13 @@
 #ifndef FS_H
 #define FS_H
 #include "lib/bst.h"
+#include <sys/types.h>
 
 typedef struct tecnicofs {
     node* bstRoot;
     int nextINumber;
+    pthread_mutex_t treeMutexLock;
+    pthread_rwlock_t treeRwLock;
 } tecnicofs;
 
 int obtainNewInumber(tecnicofs* fs);

@@ -15,8 +15,8 @@ tecnicofs** fs;
 
 FILE *inputfile, *outputfile;
 
-pthread_mutex_t mutexVectorLock, treeMutexLock;
-pthread_rwlock_t rwVectorLock, treeRwLock;
+pthread_mutex_t mutexVectorLock;
+pthread_rwlock_t rwVectorLock;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -111,7 +111,7 @@ void *applyCommands(){    //devolve o tempo de execucao
         lock_mutex(&mutexVectorLock);
         lock_rw(&rwVectorLock);
         const char* command = removeCommand();
-        
+        int hhash;
 
         if (command == NULL){
             unlock_rw(&rwVectorLock);
@@ -124,18 +124,18 @@ void *applyCommands(){    //devolve o tempo de execucao
             fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
         }
-        
+        hhash = hash(name, numberBuckets);
         switch (token) {
             case 'c':
-                iNumber = obtainNewInumber(fs[hash(name, numberBuckets)]);
+                iNumber = obtainNewInumber(fs[hhash]);
                 unlock_rw(&rwVectorLock);
                 unlock_mutex(&mutexVectorLock);
-                lock_mutex(&treeMutexLock);
-                lock_rw(&treeRwLock);
+                lock_mutex(&fs[hhash]->treeMutexLock);
+                lock_rw(&fs[hhash]->treeRwLock);
 
                 create(fs, name, iNumber);
-                unlock_rw(&treeRwLock);
-                unlock_mutex(&treeMutexLock);
+                unlock_rw(&fs[hhash]->treeRwLock);
+                unlock_mutex(&fs[hhash]->treeMutexLock);
 
                 break;
 
@@ -144,12 +144,12 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_mutex(&mutexVectorLock);
 
 
-                lock_mutex(&treeMutexLock);
-                lock_r(&treeRwLock);
+                lock_mutex(&fs[hhash]->treeMutexLock);
+                lock_r(&fs[hhash]->treeRwLock);
 
                 searchResult = lookup(fs, name);
-                unlock_rw(&treeRwLock);
-                unlock_mutex(&treeMutexLock);
+                unlock_rw(&fs[hhash]->treeRwLock);
+                unlock_mutex(&fs[hhash]->treeMutexLock);
 
                 if(!searchResult)
                     printf("%s not found\n", name);
@@ -161,13 +161,13 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwVectorLock);
                 unlock_mutex(&mutexVectorLock);
 
-                lock_mutex(&treeMutexLock);
-                lock_rw(&treeRwLock);
+                lock_mutex(&fs[hhash]->treeMutexLock);
+                lock_rw(&fs[hhash]->treeRwLock);
 
 
                 delete(fs, name);
-                unlock_rw(&treeRwLock);
-                unlock_mutex(&treeMutexLock);
+                unlock_rw(&fs[hhash]->treeRwLock);
+                unlock_mutex(&fs[hhash]->treeMutexLock);
                 break;
 
             default: { /* error */
