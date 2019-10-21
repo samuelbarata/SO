@@ -108,8 +108,6 @@ void *applyCommands(){    //devolve o tempo de execucao
         char name[MAX_INPUT_SIZE];
         int searchResult;
         int iNumber;
-        int hashe;
-
         lock_mutex(&mutexVectorLock);
         lock_rw(&rwVectorLock);
         const char* command = removeCommand();
@@ -129,14 +127,13 @@ void *applyCommands(){    //devolve o tempo de execucao
         
         switch (token) {
             case 'c':
-                hashe = hash(name, numberBuckets);
-                iNumber = obtainNewInumber(fs[hashe]);
+                iNumber = obtainNewInumber(fs[hash(name, numberBuckets)]);
                 unlock_rw(&rwVectorLock);
                 unlock_mutex(&mutexVectorLock);
                 lock_mutex(&treeMutexLock);
                 lock_rw(&treeRwLock);
 
-                create(fs[hashe], name, iNumber);
+                create(fs, name, iNumber);
                 unlock_rw(&treeRwLock);
                 unlock_mutex(&treeMutexLock);
 
@@ -146,12 +143,11 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwVectorLock);
                 unlock_mutex(&mutexVectorLock);
 
-                hashe = hash(name, numberBuckets);
 
                 lock_mutex(&treeMutexLock);
                 lock_r(&treeRwLock);
 
-                searchResult = lookup(fs[hashe], name);
+                searchResult = lookup(fs, name);
                 unlock_rw(&treeRwLock);
                 unlock_mutex(&treeMutexLock);
 
@@ -165,13 +161,11 @@ void *applyCommands(){    //devolve o tempo de execucao
                 unlock_rw(&rwVectorLock);
                 unlock_mutex(&mutexVectorLock);
 
-                hashe = hash(name, numberBuckets);
-
                 lock_mutex(&treeMutexLock);
                 lock_rw(&treeRwLock);
 
 
-                delete(fs[hashe], name);
+                delete(fs, name);
                 unlock_rw(&treeRwLock);
                 unlock_mutex(&treeMutexLock);
                 break;
