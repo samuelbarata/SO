@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "lib/hash.c"
+#include "lib/hash.h"
 #include "definer.h"
 
 int obtainNewInumber(tecnicofs* fs) {
@@ -21,11 +21,13 @@ tecnicofs** new_tecnicofs(){
 		fs->bstRoot = NULL;
 		fs->nextINumber = 0;
 		hashtable[i] = fs;
+		sync_init(&fs->treeLock, NULL);
 	}
 	return hashtable;
 }
 
 void free_tecnicofs(tecnicofs** fs){
+	sync_destroy(&fs->treeLock);
 	for(int i = 0; i<numberBuckets; i++){
 		free_tree(fs[i]->bstRoot);
 	}

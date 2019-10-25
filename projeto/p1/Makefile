@@ -16,16 +16,18 @@ debug: fullclean
 debug: CFLAGS += -g
 debug: all
 
-tecnicofs-nosync: lib/bst.o fs.o main.o
-	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-nosync lib/bst.o fs.o main.o
+tecnicofs-nosync: lib/bst.o fs.o main.o lib/hash.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-nosync lib/bst.o lib/hash.o fs.o main.o
 
-tecnicofs-mutex: lib/bst.o fs.o main-mu.o
-	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o fs.o main-mu.o
+tecnicofs-mutex: lib/bst.o fs.o main-mu.o lib/hash.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-mutex lib/bst.o lib/hash.o fs.o main-mu.o
 
-tecnicofs-rwlock: lib/bst.o fs.o main-rw.o
-	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-rwlock lib/bst.o fs.o main-rw.o
+tecnicofs-rwlock: lib/bst.o fs.o main-rw.o lib/hash.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-rwlock lib/bst.o lib/hash.o fs.o main-rw.o
 
 
+lib/hash.o: lib/hash.c lib/hash.h 
+	$(CC) $(CFLAGS) -o lib/hash.o -c lib/hash.c
 
 lib/bst.o: lib/bst.c lib/bst.h
 	$(CC) $(CFLAGS) -o lib/bst.o -c lib/bst.c
@@ -35,13 +37,13 @@ fs.o: fs.c fs.h lib/bst.h
 
 
 
-main.o: main.c fs.h lib/bst.h
+main.o: main.c fs.h lib/bst.h lib/hash.h
 	$(CC) $(CFLAGS) -o main.o -c main.c
 
-main-mu.o: main.c fs.h lib/bst.h
+main-mu.o: main.c fs.h lib/bst.h lib/hash.h
 	$(CC) $(CFLAGS) -DMUTEX -o main-mu.o -c main.c 
 
-main-rw.o: main.c fs.h lib/bst.h
+main-rw.o: main.c fs.h lib/bst.h lib/hash.h
 	$(CC) $(CFLAGS) -DRWLOCK -o main-rw.o -c main.c
 
 
