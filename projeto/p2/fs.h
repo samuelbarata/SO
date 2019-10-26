@@ -3,8 +3,8 @@
 #ifndef FS_H
 #define FS_H
 #include "lib/bst.h"
-#include "lib/hash.h"
 #include "sync.h"
+#include "globals.h"
 
 typedef struct tecnicofs {
     node* bstRoot;
@@ -12,7 +12,9 @@ typedef struct tecnicofs {
     syncMech bstLock;
 } tecnicofs;
 
-int obtainNewInumber(tecnicofs** fs, int hashPlace);
+extern int numberBuckets;
+
+int obtainNewInumber(tecnicofs** fs);
 tecnicofs** new_tecnicofs();
 void free_tecnicofs(tecnicofs** fs);
 void create(tecnicofs **fs, char *name, int inumber);

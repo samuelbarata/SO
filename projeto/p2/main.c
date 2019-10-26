@@ -1,19 +1,31 @@
-/* Sistemas Operativos, DEI/IST/ULisboa 2019-20 */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include "fs.h"
-#include "constants.h"
+#include <semaphore.h>
 #include "lib/timer.h"
-#include "lib/hash.h"
+#include "lib/bst.h"
+#include "globals.h"
+#include "fs.h"
 #include "sync.h"
 
+char* global_inputFile = NULL;
+char* global_outputFile = NULL;
+int numberThreads = 0;
+int numberBuckets = 0;
 
+char inputCommands[VECTOR_SIZE][MAX_INPUT_SIZE];
+int numberCommands = 0;
+int headQueue = 0;
+int tailQueue = 0;
+
+pthread_mutex_t commandsLock;
+sem_t semVetor;
+
+tecnicofs** fs;
 
 static void displayUsage (const char* appName){
-    printf("Usage: %s input_filepath output_filepath numthreads numbuckets\n", appName);
+    printf("Usage: %s input_filepath output_filepath numthreads[>=1] numbuckets[>=1]\n", appName);
     exit(EXIT_FAILURE);
 }
 
@@ -36,7 +48,12 @@ static void parseArgs (long argc, char* const argv[]){
 
 int insertCommand(char* data) {
     if(numberCommands != MAX_COMMANDS) {
-        strcpy(inputCommands[numberCommands++], data);
+        sem_wait(&semVetor);
+
+        mutex_lock(&commandsLock);
+        strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
+        numberCommands++;
+        mutex_unlock(&commandsLock);
         return 1;
     }
     return 0;
@@ -45,7 +62,7 @@ int insertCommand(char* data) {
 char* removeCommand() {
     if(numberCommands > 0){
         numberCommands--;
-        return inputCommands[headQueue++];  
+        return inputCommands[(headQueue++)%VECTOR_SIZE];
     }
     return NULL;
 }
@@ -55,7 +72,7 @@ void errorParse(int lineNumber){
     exit(EXIT_FAILURE);
 }
 
-void processInput(){
+void *processInput(){
     FILE* inputFile;
     inputFile = fopen(global_inputFile, "r");
     if(!inputFile){
@@ -84,13 +101,13 @@ void processInput(){
                     errorParse(lineNumber);
                 if(insertCommand(line))
                     break;
-                return;
+                return NULL;
             case 'r':   //rename
                 if(numTokens != 3)
                     errorParse(lineNumber);
                 if(insertCommand(line))
                     break;
-                return;
+                return NULL;
             case '#':   //comment
                 break;
             default: { /* error */
@@ -99,6 +116,7 @@ void processInput(){
         }
     }
     fclose(inputFile);
+    return NULL;
 }
 
 FILE * openOutputFile() {
@@ -111,14 +129,16 @@ FILE * openOutputFile() {
     return fp;
 }
 
-void* applyCommands(){
-    while(numberCommands > 0){
+void* applyCommands(void* stop){
+    while(!(*(int*)stop) || numberCommands>0){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber;
         
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
+        sem_post(&semVetor);
+
         if (command == NULL){
             mutex_unlock(&commandsLock);
             continue;
@@ -131,8 +151,7 @@ void* applyCommands(){
                 delete(fs, name);
                 strcpy(name, newName);
             case 'c':
-                int h = hash(name, numberBuckets);
-                iNumber = obtainNewInumber(fs, h);
+                iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
                 create(fs, name, iNumber);
                 break;
@@ -154,49 +173,56 @@ void* applyCommands(){
                 exit(EXIT_FAILURE);
             }
         }
-
     }
     return NULL;
 }
 
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
-    #if defined (RWLOCK) || defined (MUTEX)
-        pthread_t* workers = (pthread_t*) malloc(numberThreads * sizeof(pthread_t));
-    #endif
+    sem_init(&semVetor, 0, VECTOR_SIZE);
+    int err, *stop=malloc(sizeof(int)), join;
+    *stop=0;
+    pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
+
 
     TIMER_READ(startTime);
-    #if defined (RWLOCK) || defined (MUTEX)
-        for(int i = 0; i < numberThreads; i++){
-            int err = pthread_create(&workers[i], NULL, applyCommands, NULL);
-            if (err != 0){
-                perror("Can't create thread");
-                exit(EXIT_FAILURE);
-            }
+
+    for(int i = 0; i < numberThreads+1; i++){
+        if(!i)  //processInput
+            err = pthread_create(&workers[i], NULL, processInput, NULL);
+        else    //applyCommands
+            err = pthread_create(&workers[i], NULL, applyCommands, (void*)stop);
+        
+        if (err != 0){
+            perror("Can't create thread");
+            exit(EXIT_FAILURE);
         }
-        for(int i = 0; i < numberThreads; i++) {
-            if(pthread_join(workers[i], NULL)) {
-                perror("Can't join thread");
-            }
+    }
+    for(int i = 0; i < numberThreads+1; i++) {
+        join=pthread_join(workers[i], NULL);
+        if(!i)  //processInput
+            *stop=1;    //applyCommands pode parar
+        if(join){
+            perror("Can't join thread");
         }
-    #else
-        applyCommands();
-    #endif
+    }
+
     TIMER_READ(stopTime);
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
-    #if defined (RWLOCK) || defined (MUTEX)
-        free(workers);
-    #endif
+    free(stop);
+    free(workers);
+    sem_destroy(&semVetor);
 }
+
 
 int main(int argc, char* argv[]) {
     parseArgs(argc, argv);
-    processInput();
-    FILE * outputFp = openOutputFile();
     mutex_init(&commandsLock);
-    fs = new_tecnicofs();
 
-    runThreads(stdout);
+    FILE * outputFp = openOutputFile();
+    fs = new_tecnicofs();
+    runThreads(stdout);     //numberThreads Threads
+
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);

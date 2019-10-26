@@ -2,15 +2,16 @@
 
 #include "fs.h"
 #include "lib/bst.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "sync.h"
+#include "lib/hash.h"
 
 
-
-int obtainNewInumber(tecnicofs** fs, int hashPlace) {
-	int newInumber = ++(fs[hashPlace]->nextINumber);
+int obtainNewInumber(tecnicofs** fs) {//como os inumbers são independentes do bucket gravados em fs[0]
+	int newInumber = ++(fs[0]->nextINumber);
 	return newInumber;
 }
 

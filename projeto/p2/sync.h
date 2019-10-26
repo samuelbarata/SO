@@ -5,7 +5,7 @@
 
 #include <pthread.h>
 #include <unistd.h>
-#include "constants.h"
+#include "globals.h"
 
 #ifdef RWLOCK
     #define syncMech              pthread_rwlock_t
