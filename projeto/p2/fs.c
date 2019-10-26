@@ -68,6 +68,12 @@ int lookup(tecnicofs** fs, char *name){
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs **fs){
 	for (int i = 0; i < numberBuckets; i++){
+		#ifdef DEBUGG
+		sync_wrlock(&fs[i]->bstLock);
+		#endif
 		print_tree(fp, fs[i]->bstRoot);
+		#ifdef DEBUGG
+		sync_unlock(&fs[i]->bstLock);
+		#endif
 	}
 }

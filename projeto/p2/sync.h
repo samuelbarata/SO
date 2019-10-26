@@ -8,6 +8,7 @@
 #include "globals.h"
 
 #ifdef RWLOCK
+    #define SYNC
     #define syncMech              pthread_rwlock_t
     #define syncMech_init(a,b)    pthread_rwlock_init(a,b)
     #define syncMech_destroy(a)   pthread_rwlock_destroy(a)
@@ -16,6 +17,7 @@
     #define syncMech_unlock(a)    pthread_rwlock_unlock(a)
     #define syncMech_try_lock(a)  pthread_rwlock_trywrlock(a)
 #elif MUTEX
+    #define SYNC
     #define syncMech              pthread_mutex_t
     #define syncMech_init(a,b)    pthread_mutex_init(a,b)
     #define syncMech_destroy(a)   pthread_mutex_destroy(a)

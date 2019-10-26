@@ -19,8 +19,15 @@ int numberCommands = 0;
 int headQueue = 0;
 int tailQueue = 0;
 
+#ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    int commandsExecuted;
+    FILE*debug;
+    pthread_mutex_t debugg;
+#endif
+
+
 pthread_mutex_t commandsLock;
-sem_t semVetor;
+sem_t canIncert, canRemove;
 
 tecnicofs** fs;
 
@@ -43,17 +50,25 @@ static void parseArgs (long argc, char* const argv[]){
         fprintf(stderr, "Invalid number of threads\n");
         displayUsage(argv[0]);
     }
-
+    #ifndef SYNC
+        numberThreads=1;
+    #endif
 }
 
 int insertCommand(char* data) {
     if(numberCommands != MAX_COMMANDS) {
-        sem_wait(&semVetor);
-
-        mutex_lock(&commandsLock);
+        sem_wait(&canIncert);
+        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        {   
+            pthread_mutex_lock(&debugg);
+            fprintf(debug, "IN: %01d - [%d]%s", tailQueue ,tailQueue%VECTOR_SIZE, data);
+            fflush(debug);
+            pthread_mutex_unlock(&debugg);
+        }
+        #endif
         strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
         numberCommands++;
-        mutex_unlock(&commandsLock);
+        sem_post(&canRemove);
         return 1;
     }
     return 0;
@@ -131,20 +146,24 @@ FILE * openOutputFile() {
 
 void* applyCommands(void* stop){
     while(!(*(int*)stop) || numberCommands>0){
+        //if(!numberCommands)
+        //    continue;
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber;
         
+        
+        sem_wait(&canRemove);
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
-        sem_post(&semVetor);
-
+        
         if (command == NULL){
             mutex_unlock(&commandsLock);
             continue;
         }
         
         sscanf(command, "%c %s %s", &token, name, newName);
+        sem_post(&canIncert);
 
         switch (token) {
             case 'r':
@@ -173,17 +192,47 @@ void* applyCommands(void* stop){
                 exit(EXIT_FAILURE);
             }
         }
+        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        {   
+            pthread_mutex_lock(&debugg);
+            commandsExecuted++;
+            //print_tecnicofs_tree(debug, fs);
+            fprintf(debug, "OUT %01d - %s", commandsExecuted, command);
+            fflush(debug);
+            pthread_mutex_unlock(&debugg);
+        }
+        #endif
+        
     }
+    
     return NULL;
 }
 
+void initSemaforos(){
+    int aux=0;
+    aux+=sem_init(&canIncert, 0, VECTOR_SIZE);   //posso inserir no vetor
+    aux+=sem_init(&canRemove, 0, 0);             //posso remover do vetor
+    if(aux){
+        fprintf(stderr, "Error: initializing semaphore\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
-    sem_init(&semVetor, 0, VECTOR_SIZE);
+    
     int err, *stop=malloc(sizeof(int)), join;
     *stop=0;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
 
+    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    commandsExecuted=0;
+    debug = fopen("debug.out", "w");
+    pthread_mutex_init(&debugg, NULL);
+    #endif
+    
+    initSemaforos();
 
     TIMER_READ(startTime);
 
@@ -206,12 +255,16 @@ void runThreads(FILE* timeFp){
             perror("Can't join thread");
         }
     }
+    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fclose(debug);
+    #endif
 
     TIMER_READ(stopTime);
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     free(stop);
     free(workers);
-    sem_destroy(&semVetor);
+    sem_destroy(&canIncert);
+    sem_destroy(&canRemove);
 }
 
 

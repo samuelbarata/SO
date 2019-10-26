@@ -9,13 +9,14 @@ OBJS_RWLOCK = $(SOURCES:%.c=%-rwlock.o)
 OBJS = $(OBJS_NOSYNC) $(OBJS_MUTEX) $(OBJS_RWLOCK)
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -g
+CFLAGS =-Wall -std=gnu99 -I../ -g -DDEBUGG
 LDFLAGS=-lm -pthread
 TARGETS = tecnicofs-nosync tecnicofs-mutex tecnicofs-rwlock
 
 .PHONY: all clean
 
 all: $(TARGETS)
+
 
 $(TARGETS):
 	$(LD) $(CFLAGS) $^ -o $@ $(LDFLAGS)
