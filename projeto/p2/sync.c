@@ -119,14 +119,8 @@ void se_destroy(sem_t* id){
     }
 }
 
-int se_trywait(sem_t *id){
-    int ret = sem_trywait(id);
-    if(ret == 0)
-        return 0;
-    if(ret != 0 && errno == EAGAIN)
-        return 1;
-    perror("sem_trywait failed");
-    exit(EXIT_FAILURE);
+void se_close(sem_t *id, int iter){
+    for(int i = 0; i<iter ;se_post(id), i++);
 }
 
 int do_nothing(void* a){

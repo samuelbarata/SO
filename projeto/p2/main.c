@@ -132,10 +132,7 @@ void* applyCommands(void* stop){
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber, newInumber, temp;
         
-        temp = se_trywait(&canRemove);
-        if(temp == 1)
-            continue;
-
+        se_wait(&canRemove);
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
@@ -216,7 +213,7 @@ void runThreads(FILE* timeFp){
         join=pthread_join(workers[i], NULL);
         if(!i){  //processInput
             *stop=1;    //applyCommands pode parar
-            //se_end(&canRemove); //abre o semaforo para todas as threads presas sairem do ciclo
+            se_close(&canRemove, numberThreads); //abre o semaforo para todas as threads presas sairem do ciclo
         }
         if(join){
             perror("Can't join thread");
