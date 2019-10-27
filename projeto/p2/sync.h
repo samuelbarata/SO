@@ -4,6 +4,7 @@
 #define SYNC_H
 
 #include <pthread.h>
+#include <semaphore.h>
 #include <unistd.h>
 #include "globals.h"
 
@@ -44,6 +45,10 @@ void mutex_init(pthread_mutex_t* mutex);
 void mutex_lock(pthread_mutex_t* mutex);
 void mutex_unlock(pthread_mutex_t* mutex);
 void mutex_destroy(pthread_mutex_t* mutex);
+void se_wait(sem_t* id);
+void se_post(sem_t* id);
+void se_init(sem_t* id, unsigned int n);
+void se_destroy(sem_t* id);
 int do_nothing(void* a);
 
 #endif /* SYNC_H */

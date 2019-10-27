@@ -84,6 +84,34 @@ void mutex_unlock(pthread_mutex_t* mutex){
      #endif
 }
 
+void se_wait(sem_t* id){
+    if(!sem_wait(id)){
+        perror("sem_wait failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void se_post(sem_t* id){
+    if(!sem_post(id)){
+        perror("sem_post failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void se_init(sem_t* id, unsigned int n){
+    if(!sem_init(id, 0, n)){
+        perror("sem_init failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void se_destroy(sem_t* id){
+    if(!sem_destroy(id)){
+        perror("sem_init failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int do_nothing(void* a){
     (void)a;
     return 0;

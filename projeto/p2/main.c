@@ -32,7 +32,7 @@ sem_t canProduce, canRemove;
 tecnicofs** fs;
 
 static void displayUsage (const char* appName){
-    printf("Usage: %s input_filepath output_filepath numthreads[>=1] numbuckets[>=1]\n", appName);
+    fprintf(stderr, "Usage: %s input_filepath output_filepath numthreads[>=1] numbuckets[>=1]\n", appName);
     exit(EXIT_FAILURE);
 }
 
@@ -56,22 +56,19 @@ static void parseArgs (long argc, char* const argv[]){
 }
 
 int insertCommand(char* data) {
-    if(numberCommands != MAX_COMMANDS) {
-        sem_wait(&canProduce);
-        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        {   
-            pthread_mutex_lock(&debugg);
-            fprintf(debug, "IN: %01d - [%d]%s", tailQueue ,tailQueue%VECTOR_SIZE, data);
-            fflush(debug);
-            pthread_mutex_unlock(&debugg);
-        }
-        #endif
-        strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
-        numberCommands++;
-        sem_post(&canRemove);
-        return 1;
+    se_wait(&canProduce);
+    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    {   
+        pthread_mutex_lock(&debugg);
+        fprintf(debug, "IN: %01d - [%d]%s", tailQueue ,tailQueue%VECTOR_SIZE, data);
+        fflush(debug);
+        pthread_mutex_unlock(&debugg);
     }
-    return 0;
+    #endif
+    strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
+    numberCommands++;
+    se_post(&canRemove);
+    return 1;
 }
 
 char* removeCommand() {
@@ -157,7 +154,7 @@ void* applyCommands(void* stop){
         int iNumber;
         
         
-        sem_wait(&canRemove);
+        se_wait(&canRemove);
         mutex_lock(&commandsLock);
         
         
@@ -183,7 +180,7 @@ void* applyCommands(void* stop){
         }
         #endif
 
-        sem_post(&canProduce);
+        se_post(&canProduce);
 
         switch (token) {
             case 'r':
@@ -233,13 +230,8 @@ void* applyCommands(void* stop){
 }
 
 void initSemaforos(){
-    int aux=0;
-    aux+=sem_init(&canProduce, 0, VECTOR_SIZE);   //posso inserir no vetor
-    aux+=sem_init(&canRemove, 0, 0);             //posso remover do vetor
-    if(aux){
-        fprintf(stderr, "Error: initializing semaphore\n");
-        exit(EXIT_FAILURE);
-    }
+    se_init(&canProduce, VECTOR_SIZE);   //posso inserir no vetor
+    se_init(&canRemove, 0);              //posso remover do vetor
 }
 
 
@@ -287,8 +279,8 @@ void runThreads(FILE* timeFp){
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     free(stop);
     free(workers);
-    sem_destroy(&canProduce);
-    sem_destroy(&canRemove);
+    se_destroy(&canProduce);
+    se_destroy(&canRemove);
 }
 
 
