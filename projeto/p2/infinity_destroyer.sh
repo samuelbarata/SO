@@ -8,12 +8,6 @@ NC='\033[0m'
 BOLD='\033[1m'
 NORM='\033[0m'
 
-#if [ $# -lt 1 ] ; then
-#    echo "Usage: $0 inputdir outputdir maxthreads numbuckets"
-#    echo "Example: ${0} inputs outputs 4 5"
-#    exit 1
-#fi
-
 input="inputs"
 output="output"
 maxthreads=31
@@ -41,7 +35,7 @@ for test_in in `ls ${input}`; do
         test_out="${output}/${test_in}-${i}.txt"
         test_stdout="${output}/temp/${test_in}-${i}.stdout"
 
-        #echo "InputFile=${test_in} NumThreads=${i}"
+        echo "$k InputFile=${test_in} NumThreads=${i}"
         ./${prog_name} ${input}/${test_in} ${test_out} ${i} ${buckets} > ${test_stdout} 2>/dev/stdout
         rv_student=$?
 
@@ -53,8 +47,8 @@ for test_in in `ls ${input}`; do
             echo -e "${test_in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
             continue
         fi
-		echo ${k}.${test_in}.${i}
-        #cat ${test_stdout} | grep '^TecnicoFS'
+	#echo ${k}.${test_in}.${i}
+        cat ${test_stdout} | grep '^TecnicoFS'
 		rm -f -r ${test_stdout}
     done
 done
