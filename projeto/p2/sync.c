@@ -94,20 +94,6 @@ void se_wait(sem_t* id){
     }
 }
 
-int se_time_wait(sem_t* id){
-    WAIT_TIME ts;
-    ts.tv_sec=0;
-    ts.tv_nsec=NSEC_OFFSET;
-    int ret = sem_timedwait(id, &ts);
-    if (ret == -1 && errno == ETIMEDOUT) //espera ts segundos; depois sai
-        return 1;
-    else if(ret != 0){
-        perror("sem_timedwait failed");
-        exit(EXIT_FAILURE);
-    }
-    return 0;
-
-}
 
 void se_post(sem_t* id){
     int ret = sem_post(id);

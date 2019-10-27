@@ -15,6 +15,4 @@
     (((double)(stop.tv_sec)  + (double)(stop.tv_usec / 1000000.0)) - \
      ((double)(start.tv_sec) + (double)(start.tv_usec / 1000000.0)))
 
-#define WAIT_TIME                       struct timespec       
-
 #endif /* TIMER_H */

@@ -145,16 +145,15 @@ FILE * openOutputFile() {
 
 void* applyCommands(void* stop){
     while(!(*(int*)stop) || numberCommands>0){
-        if(!numberCommands)
-            continue;
-        
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber;
         
-        if(se_time_wait(&canRemove))
+        se_wait(&canRemove);
+        if(!numberCommands){
+            se_post(&canRemove);
             continue;
-
+        }
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
@@ -262,8 +261,10 @@ void runThreads(FILE* timeFp){
     }
     for(int i = 0; i < numberThreads+1; i++) {
         join=pthread_join(workers[i], NULL);
-        if(!i)  //processInput
+        if(!i){  //processInput
             *stop=1;    //applyCommands pode parar
+            for(int k = 0; k<numberThreads; k++, se_post(&canRemove));//deixa as threads no wait sairem da funcao
+        }
         if(join){
             perror("Can't join thread");
         }
