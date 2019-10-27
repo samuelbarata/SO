@@ -3,7 +3,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define VECTOR_SIZE 10
+#define ARRAY_SIZE 10
 #define MAX_INPUT_SIZE 100
 #define DELAY 5000
 

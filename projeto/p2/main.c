@@ -14,7 +14,7 @@ char* global_outputFile = NULL;
 int numberThreads = 0;
 int numberBuckets = 0;
 
-char inputCommands[VECTOR_SIZE][MAX_INPUT_SIZE];
+char inputCommands[ARRAY_SIZE][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueue = 0;
 int tailQueue = 0;
@@ -50,7 +50,7 @@ static void parseArgs (long argc, char* const argv[]){
 
 int insertCommand(char* data) {
     se_wait(&canProduce);
-    strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
+    strcpy(inputCommands[(tailQueue++)%ARRAY_SIZE], data);
     numberCommands++;
     se_post(&canRemove);
     return 1;
@@ -59,7 +59,7 @@ int insertCommand(char* data) {
 char* removeCommand() {
     if(numberCommands > 0){
         numberCommands--;
-        return inputCommands[(headQueue++)%VECTOR_SIZE];
+        return inputCommands[(headQueue++)%ARRAY_SIZE];
     }
     return NULL;
 }
@@ -130,13 +130,14 @@ void* applyCommands(void* stop){
     while(!(*(int*)stop) || numberCommands>0){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
-        int iNumber;
+        int iNumber, newInumber;
         
         se_wait(&canRemove);
-        if(!numberCommands){
-            se_post(&canRemove);
+        if(!numberCommands){    //se nao ha mais comandos volta ao ciclo
+            se_post(&canRemove);    
             continue;
         }
+
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
@@ -167,9 +168,10 @@ void* applyCommands(void* stop){
                 delete(fs, name);
                 break;
             case 'r':
-                mutex_unlock(&commandsLock);
                 iNumber = lookup(fs, name);         //inumber do ficheiro atual
-                if(iNumber && lookup(fs, newName)){ //se rename se inumber != 0 e inumber novo == 0
+                newInumber = lookup(fs, newName);   //ficheiro novo existe?
+                mutex_unlock(&commandsLock);
+                if(iNumber && !newInumber){ //se rename se inumber != 0 e inumber novo == 0
                     delete(fs, name);
                     create(fs, newName, iNumber);
                 }
@@ -177,7 +179,7 @@ void* applyCommands(void* stop){
                 
             default: { /* error */
                 mutex_unlock(&commandsLock);
-                fprintf(stderr, "Error: commands to apply\n");
+                fprintf(stderr, "Error: could not apply command %c\n", token);
                 exit(EXIT_FAILURE);
             }
         }
@@ -186,10 +188,9 @@ void* applyCommands(void* stop){
 }
 
 void initSemaforos(){
-    se_init(&canProduce, VECTOR_SIZE);   //posso inserir no vetor
-    se_init(&canRemove, 0);              //posso remover do vetor
+    se_init(&canProduce, ARRAY_SIZE);   //inicialmente ARRAY_SIZE vagas no array
+    se_init(&canRemove, 0);             //Array inicialmente vazio
 }
-
 
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
