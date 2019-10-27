@@ -27,7 +27,7 @@ int tailQueue = 0;
 
 
 pthread_mutex_t commandsLock;
-sem_t canIncert, canRemove;
+sem_t canProduce, canRemove;
 
 tecnicofs** fs;
 
@@ -57,7 +57,7 @@ static void parseArgs (long argc, char* const argv[]){
 
 int insertCommand(char* data) {
     if(numberCommands != MAX_COMMANDS) {
-        sem_wait(&canIncert);
+        sem_wait(&canProduce);
         #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         {   
             pthread_mutex_lock(&debugg);
@@ -163,7 +163,19 @@ void* applyCommands(void* stop){
         }
         
         sscanf(command, "%c %s %s", &token, name, newName);
-        sem_post(&canIncert);
+
+        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        {   
+            pthread_mutex_lock(&debugg);
+            commandsExecuted++;
+            //print_tecnicofs_tree(debug, fs);
+            fprintf(debug, "OUT %01d - %s", commandsExecuted, command);
+            fflush(debug);
+            pthread_mutex_unlock(&debugg);
+        }
+        #endif
+
+        sem_post(&canProduce);
 
         switch (token) {
             case 'r':
@@ -173,6 +185,14 @@ void* applyCommands(void* stop){
                 iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
                 create(fs, name, iNumber);
+                                #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                {   
+                                    pthread_mutex_lock(&debugg);
+                                    print_tecnicofs_tree(debug, fs);
+                                    fflush(debug);
+                                    pthread_mutex_unlock(&debugg);
+                                }
+                                #endif
                 break;
             case 'l':
                 mutex_unlock(&commandsLock);
@@ -185,6 +205,14 @@ void* applyCommands(void* stop){
             case 'd':
                 mutex_unlock(&commandsLock);
                 delete(fs, name);
+                                #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                {   
+                                    pthread_mutex_lock(&debugg);
+                                    print_tecnicofs_tree(debug, fs);
+                                    fflush(debug);
+                                    pthread_mutex_unlock(&debugg);
+                                }
+                                #endif
                 break;
             default: { /* error */
                 mutex_unlock(&commandsLock);
@@ -192,25 +220,13 @@ void* applyCommands(void* stop){
                 exit(EXIT_FAILURE);
             }
         }
-        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        {   
-            pthread_mutex_lock(&debugg);
-            commandsExecuted++;
-            //print_tecnicofs_tree(debug, fs);
-            fprintf(debug, "OUT %01d - %s", commandsExecuted, command);
-            fflush(debug);
-            pthread_mutex_unlock(&debugg);
-        }
-        #endif
-        
     }
-    
     return NULL;
 }
 
 void initSemaforos(){
     int aux=0;
-    aux+=sem_init(&canIncert, 0, VECTOR_SIZE);   //posso inserir no vetor
+    aux+=sem_init(&canProduce, 0, VECTOR_SIZE);   //posso inserir no vetor
     aux+=sem_init(&canRemove, 0, 0);             //posso remover do vetor
     if(aux){
         fprintf(stderr, "Error: initializing semaphore\n");
@@ -242,7 +258,7 @@ void runThreads(FILE* timeFp){
         else    //applyCommands
             err = pthread_create(&workers[i], NULL, applyCommands, (void*)stop);
         
-        if (err != 0){
+        if (err){
             perror("Can't create thread");
             exit(EXIT_FAILURE);
         }
@@ -263,7 +279,7 @@ void runThreads(FILE* timeFp){
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     free(stop);
     free(workers);
-    sem_destroy(&canIncert);
+    sem_destroy(&canProduce);
     sem_destroy(&canRemove);
 }
 
