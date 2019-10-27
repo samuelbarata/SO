@@ -130,7 +130,7 @@ void* applyCommands(void* stop){
     while(!(*(int*)stop) || numberCommands>0){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
-        int iNumber, newInumber, temp;
+        int iNumber, newInumber;
         
         se_wait(&canRemove);
         mutex_lock(&commandsLock);
