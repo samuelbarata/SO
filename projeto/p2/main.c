@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-
 #include <semaphore.h>
 #include "lib/timer.h"
 #include "lib/bst.h"
@@ -19,14 +18,6 @@ char inputCommands[VECTOR_SIZE][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueue = 0;
 int tailQueue = 0;
-
-
-#ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int commandsExecuted;
-    FILE*debug;
-    pthread_mutex_t debugg;
-#endif
-
 
 pthread_mutex_t commandsLock;
 sem_t canProduce, canRemove;
@@ -59,14 +50,6 @@ static void parseArgs (long argc, char* const argv[]){
 
 int insertCommand(char* data) {
     se_wait(&canProduce);
-    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    {   
-        pthread_mutex_lock(&debugg);
-        fprintf(debug, "IN: %01d - [%d]%s", tailQueue ,tailQueue%VECTOR_SIZE, data);
-        fflush(debug);
-        pthread_mutex_unlock(&debugg);
-    }
-    #endif
     strcpy(inputCommands[(tailQueue++)%VECTOR_SIZE], data);
     numberCommands++;
     se_post(&canRemove);
@@ -163,36 +146,13 @@ void* applyCommands(void* stop){
         }
         
         sscanf(command, "%c %s %s", &token, name, newName);
-
-        #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        {   
-            pthread_mutex_lock(&debugg);
-            commandsExecuted++;
-            //print_tecnicofs_tree(debug, fs);
-            fprintf(debug, "OUT %01d - %s", commandsExecuted, command);
-            fflush(debug);
-            pthread_mutex_unlock(&debugg);
-        }
-        #endif
-
         se_post(&canProduce);
 
         switch (token) {
-            case 'r':
-                delete(fs, name);
-                strcpy(name, newName);
             case 'c':
                 iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
                 create(fs, name, iNumber);
-                                #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                {   
-                                    pthread_mutex_lock(&debugg);
-                                    print_tecnicofs_tree(debug, fs);
-                                    fflush(debug);
-                                    pthread_mutex_unlock(&debugg);
-                                }
-                                #endif
                 break;
             case 'l':
                 mutex_unlock(&commandsLock);
@@ -205,15 +165,16 @@ void* applyCommands(void* stop){
             case 'd':
                 mutex_unlock(&commandsLock);
                 delete(fs, name);
-                                #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                {   
-                                    pthread_mutex_lock(&debugg);
-                                    print_tecnicofs_tree(debug, fs);
-                                    fflush(debug);
-                                    pthread_mutex_unlock(&debugg);
-                                }
-                                #endif
                 break;
+            case 'r':
+                mutex_unlock(&commandsLock);
+                iNumber = lookup(fs, name);         //inumber do ficheiro atual
+                if(iNumber && lookup(fs, newName)){ //se rename se inumber != 0 e inumber novo == 0
+                    delete(fs, name);
+                    create(fs, newName, iNumber);
+                }
+                break;
+                
             default: { /* error */
                 mutex_unlock(&commandsLock);
                 fprintf(stderr, "Error: commands to apply\n");
@@ -237,17 +198,9 @@ void runThreads(FILE* timeFp){
     *stop=0;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
     
-
-    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    commandsExecuted=0;
-    debug = fopen("debug.out", "w");
-    pthread_mutex_init(&debugg, NULL);
-    #endif
-    
     initSemaforos();
 
     TIMER_READ(startTime);
-
     for(int i = 0; i < numberThreads+1; i++){
         if(!i)  //processInput
             err = pthread_create(&workers[i], NULL, processInput, NULL);
@@ -269,9 +222,6 @@ void runThreads(FILE* timeFp){
             perror("Can't join thread");
         }
     }
-    #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    fclose(debug);
-    #endif
 
     TIMER_READ(stopTime);
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
@@ -288,7 +238,7 @@ int main(int argc, char* argv[]) {
 
     FILE * outputFp = openOutputFile();
     fs = new_tecnicofs();
-    runThreads(stdout);     //numberThreads Threads
+    runThreads(stdout);
 
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
