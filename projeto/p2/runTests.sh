@@ -19,8 +19,8 @@ output=$2
 maxthreads=$3
 numbuckets=$4
 
-make clean
-make
+make clean > /dev/null
+make > /dev/null
 mkdir output 2> /dev/null
 mkdir output/temp 2> /dev/null
 

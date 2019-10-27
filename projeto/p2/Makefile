@@ -66,7 +66,7 @@ clean:
 	@echo Cleaning...
 	rm -f $(OBJS) $(TARGETS)
 	@rm -f *.out core inputs/*.out
-	@rm -f -r output/*
+	@rm -f -r output/
 	@clear
 
 run: all
