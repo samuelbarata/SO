@@ -1,8 +1,10 @@
 /* Sistemas Operativos, DEI/IST/ULisboa 2019-20 */
 
 #include "sync.h"
+#include "lib/timer.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 void sync_init(syncMech* sync){
     int ret = syncMech_init(sync, NULL);
@@ -90,6 +92,21 @@ void se_wait(sem_t* id){
         perror("sem_wait failed");
         exit(EXIT_FAILURE);
     }
+}
+
+int se_time_wait(sem_t* id){
+    WAIT_TIME ts;
+    ts.tv_sec=0;
+    ts.tv_nsec=NSEC_OFFSET;
+    int ret = sem_timedwait(id, &ts);
+    if (ret == -1 && errno == ETIMEDOUT) //espera ts segundos; depois sai
+        return 1;
+    else if(ret != 0){
+        perror("sem_timedwait failed");
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+
 }
 
 void se_post(sem_t* id){

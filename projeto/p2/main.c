@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <errno.h>
+
 #include <semaphore.h>
 #include "lib/timer.h"
 #include "lib/bst.h"
@@ -19,7 +19,7 @@ char inputCommands[VECTOR_SIZE][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueue = 0;
 int tailQueue = 0;
-WAIT_TIME ts;
+
 
 #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     int commandsExecuted;
@@ -144,33 +144,18 @@ FILE * openOutputFile() {
 }
 
 void* applyCommands(void* stop){
-    while(!(*(int*)stop) || numberCommands>0){ // (s = sem_timedwait(&sem, &ts)) == -1 && errno == EINTR) 
-        //////////////////////////////  INICIO  BUG //////////////////////////////
-        
+    while(!(*(int*)stop) || numberCommands>0){
         if(!numberCommands)
             continue;
-        
         
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber;
         
-        
-        int err = sem_timedwait(&canRemove, &ts);
-        if (err == -1 && errno == ETIMEDOUT) //espera ts segundos; depois repete
+        if(se_time_wait(&canRemove))
             continue;
-        else if(err != 0){
-            perror("sem_timedwait");
-            exit(EXIT_FAILURE);
-        }
-        
-
 
         mutex_lock(&commandsLock);
-        
-        
-        //////////////////////////////   FIM    BUG //////////////////////////////
-
         const char* command = removeCommand();
         
         if (command == NULL){
@@ -252,8 +237,7 @@ void runThreads(FILE* timeFp){
     int err, *stop=malloc(sizeof(int)), join;
     *stop=0;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
-    ts.tv_sec=0;
-    ts.tv_nsec=5000;
+    
 
     #ifdef DEBUGG////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     commandsExecuted=0;

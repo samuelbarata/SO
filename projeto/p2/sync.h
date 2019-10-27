@@ -49,6 +49,7 @@ void se_wait(sem_t* id);
 void se_post(sem_t* id);
 void se_init(sem_t* id, unsigned int n);
 void se_destroy(sem_t* id);
+int se_time_wait(sem_t* id);
 int do_nothing(void* a);
 
 #endif /* SYNC_H */
