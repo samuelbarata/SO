@@ -22,21 +22,22 @@ mkdir output/temp 2> /dev/null
 for ((k=1 ; k>0 ; k++))
 do
 for test_in in `ls ${input}`; do
-    for ((i=1 ; i<=$maxthreads ; i++))
-    do
+    for buckets in $(seq 1 15); do
+	for ((i=1 ; i<=$maxthreads ; i++))
+    	do
         if [ $i == 1 ] ; then
             prog_name="tecnicofs-nosync"
-            buckets=1
+	    buck=1
         else
             prog_name="tecnicofs-mutex"
-            buckets=$numbuckets
-        fi
+            buck=$buckets
+	fi
 
         test_out="${output}/${test_in}-${i}.txt"
         test_stdout="${output}/temp/${test_in}-${i}.stdout"
 
-        echo "$k InputFile=${test_in} NumThreads=${i}"
-        ./${prog_name} ${input}/${test_in} ${test_out} ${i} ${buckets} > ${test_stdout} 2>/dev/stdout
+        echo "$k InputFile=${test_in} NumThreads=${i} NumBuckets=${buck}"
+        ./${prog_name} ${input}/${test_in} ${test_out} ${i} ${buck} > ${test_stdout} 2>/dev/stdout
         rv_student=$?
 
         if [ ${rv_student} == 139 ]; then
@@ -50,6 +51,7 @@ for test_in in `ls ${input}`; do
 	#echo ${k}.${test_in}.${i}
         cat ${test_stdout} | grep '^TecnicoFS'
 		rm -f -r ${test_stdout}
+    	done
     done
 done
 done
