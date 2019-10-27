@@ -217,7 +217,7 @@ void runThreads(FILE* timeFp){
         join=pthread_join(workers[i], NULL);
         if(!i){  //processInput
             *stop=1;    //applyCommands pode parar
-            for(int k = 0; k<numberThreads; k++, se_post(&canRemove));//deixa as threads no wait sairem da funcao
+            for(int k = 0; k<numberThreads+1; k++, se_post(&canRemove));//deixa as threads no wait sairem da funcao
         }
         if(join){
             perror("Can't join thread");

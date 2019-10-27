@@ -4,7 +4,6 @@
 #include "lib/timer.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 
 void sync_init(syncMech* sync){
     int ret = syncMech_init(sync, NULL);
