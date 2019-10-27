@@ -146,8 +146,12 @@ FILE * openOutputFile() {
 
 void* applyCommands(void* stop){
     while(!(*(int*)stop) || numberCommands>0){
-        //if(!numberCommands)
-        //    continue;
+        //////////////////////////////  INICIO  BUG //////////////////////////////
+        
+        if(!numberCommands)
+            continue;
+        
+        
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber;
@@ -155,6 +159,10 @@ void* applyCommands(void* stop){
         
         sem_wait(&canRemove);
         mutex_lock(&commandsLock);
+        
+        
+        //////////////////////////////   FIM    BUG //////////////////////////////
+
         const char* command = removeCommand();
         
         if (command == NULL){
