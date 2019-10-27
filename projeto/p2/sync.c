@@ -2,6 +2,7 @@
 
 #include "sync.h"
 #include "lib/timer.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -116,6 +117,16 @@ void se_destroy(sem_t* id){
         perror("sem_init failed");
         exit(EXIT_FAILURE);
     }
+}
+
+int se_trywait(sem_t *id){
+    int ret = sem_trywait(id);
+    if(ret == 0)
+        return 0;
+    if(ret != 0 && errno == EAGAIN)
+        return 1;
+    perror("sem_trywait failed");
+    exit(EXIT_FAILURE);
 }
 
 int do_nothing(void* a){
