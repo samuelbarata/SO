@@ -213,7 +213,7 @@ void runThreads(FILE* timeFp){
         join=pthread_join(workers[i], NULL);
         if(!i){  //processInput
             *stop=1;    //applyCommands pode parar
-            se_close(&canRemove, numberThreads); //abre o semaforo para todas as threads presas sairem do ciclo
+            se_close(&canRemove, numberThreads+40); //abre o semaforo para todas as threads presas sairem do ciclo
         }
         if(join){
             perror("Can't join thread");
