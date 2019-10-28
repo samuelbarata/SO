@@ -118,10 +118,6 @@ void se_destroy(sem_t* id){
     }
 }
 
-void se_close(sem_t *id, int iter){
-    for(int i = 0; i<iter ;se_post(id), i++);
-}
-
 int do_nothing(void* a){
     (void)a;
     return 0;

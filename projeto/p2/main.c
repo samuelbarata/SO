@@ -13,6 +13,7 @@ char* global_inputFile = NULL;
 char* global_outputFile = NULL;
 int numberThreads = 0;
 int numberBuckets = 0;
+int stop = 0;
 
 char inputCommands[ARRAY_SIZE][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -113,6 +114,7 @@ void *processInput(){
         }
     }
     fclose(inputFile);
+    insertCommand("q");
     return NULL;
 }
 
@@ -126,8 +128,8 @@ FILE * openOutputFile() {
     return fp;
 }
 
-void* applyCommands(void* stop){
-    while(!(*(int*)stop) || numberCommands>0){
+void* applyCommands(){
+    while(1){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber, newInumber;
@@ -136,7 +138,13 @@ void* applyCommands(void* stop){
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
-        if (command == NULL){
+        if(stop || !strcmp(command, "q")){  //nao ha mais comandos
+            stop=1;
+            mutex_unlock(&commandsLock);
+            se_post(&canRemove);
+            pthread_exit(NULL);
+        }
+        else if (command == NULL){
             mutex_unlock(&commandsLock);
             se_post(&canRemove);
             continue;
@@ -191,8 +199,7 @@ void initSemaforos(){
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
     
-    int err, *stop=malloc(sizeof(int)), join;
-    *stop=0;
+    int err, join;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
     
     initSemaforos();
@@ -202,7 +209,7 @@ void runThreads(FILE* timeFp){
         if(!i)  //processInput
             err = pthread_create(&workers[i], NULL, processInput, NULL);
         else    //applyCommands
-            err = pthread_create(&workers[i], NULL, applyCommands, (void*)stop);
+            err = pthread_create(&workers[i], NULL, applyCommands, NULL);
         
         if (err){
             perror("Can't create thread");
@@ -211,10 +218,6 @@ void runThreads(FILE* timeFp){
     }
     for(int i = 0; i < numberThreads+1; i++) {
         join=pthread_join(workers[i], NULL);
-        if(!i){  //processInput
-            *stop=1;    //applyCommands pode parar
-            se_close(&canRemove, numberThreads+40); //abre o semaforo para todas as threads presas sairem do ciclo
-        }
         if(join){
             perror("Can't join thread");
         }
@@ -222,7 +225,6 @@ void runThreads(FILE* timeFp){
 
     TIMER_READ(stopTime);
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
-    free(stop);
     free(workers);
     se_destroy(&canProduce);
     se_destroy(&canRemove);

@@ -1,8 +1,5 @@
-/* Sistemas Operativos, DEI/IST/ULisboa 2019-20 */
-
 #include "fs.h"
 #include "lib/bst.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,6 +32,7 @@ void free_tecnicofs(tecnicofs** fs){
 	for(int i = 0; i<numberBuckets; i++){
 		free_tree(fs[i]->bstRoot);
 		sync_destroy(&(fs[i]->bstLock));
+		free(fs[i]);
 	}
 	free(fs);
 }
@@ -68,12 +66,6 @@ int lookup(tecnicofs** fs, char *name){
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs **fs){
 	for (int i = 0; i < numberBuckets; i++){
-		#ifdef DEBUGG
-		sync_wrlock(&fs[i]->bstLock);
-		#endif
 		print_tree(fp, fs[i]->bstRoot);
-		#ifdef DEBUGG
-		sync_unlock(&fs[i]->bstLock);
-		#endif
 	}
 }
