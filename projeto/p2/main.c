@@ -52,7 +52,9 @@ static void parseArgs (long argc, char* const argv[]){
 int insertCommand(char* data) {
     se_wait(&canProduce);
     strcpy(inputCommands[(tailQueue++)%ARRAY_SIZE], data);
+    mutex_lock(&commandsLock);
     numberCommands++;
+    mutex_unlock(&commandsLock);
     se_post(&canRemove);
     return 1;
 }
@@ -179,11 +181,13 @@ void* applyCommands(){
                     create(fs, newName, iNumber);
                 }
                 break;
+            
             case 'q':
                 stop=1;
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
                 pthread_exit(NULL);
+                break;
                 
             default: { /* error */
                 mutex_unlock(&commandsLock);
