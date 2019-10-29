@@ -60,7 +60,7 @@ int insertCommand(char* data) {
 }
 
 char* removeCommand() {
-    if(numberCommands > 0){
+    if(numberCommands > 0){ //já está dentro dum lock na apply commands
         numberCommands--;
         return inputCommands[(headQueue++)%ARRAY_SIZE];
     }
@@ -115,8 +115,8 @@ void *processInput(){
             }
         }
     }
+    insertCommand("q exit exit\n");
     fclose(inputFile);
-    insertCommand("q");
     return NULL;
 }
 
