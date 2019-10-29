@@ -138,8 +138,7 @@ void* applyCommands(){
         mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
-        if(stop || !strcmp(command, "q")){  //nao ha mais comandos
-            stop=1;
+        if(stop){  //nao ha mais comandos   
             mutex_unlock(&commandsLock);
             se_post(&canRemove);
             pthread_exit(NULL);
@@ -180,6 +179,11 @@ void* applyCommands(){
                     create(fs, newName, iNumber);
                 }
                 break;
+            case 'q':
+                stop=1;
+                se_post(&canRemove);
+                mutex_unlock(&commandsLock);
+                pthread_exit(NULL);
                 
             default: { /* error */
                 mutex_unlock(&commandsLock);
