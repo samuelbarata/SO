@@ -11,16 +11,16 @@
 
 char* global_inputFile = NULL;
 char* global_outputFile = NULL;
-int numberThreads = 0;
+int numberThreads = 0;  //numero de threads excluindo produtora
 int numberBuckets = 0;
-int stop = 0;
+int stop = 0;           //variavel global avisa quando todos os comandos foram processados
 
 char inputCommands[ARRAY_SIZE][MAX_INPUT_SIZE];
-int numberCommands = 0;
-int headQueue = 0;
-int tailQueue = 0;
+int numberCommands = 0; //numero de comandos a processar
+int headQueue = 0;      //onde remover do vetor
+int tailQueue = 0;      //onde incerir no vetor
 
-pthread_mutex_t commandsLock;
+pthread_mutex_t commandsLock;   //lock do vetor de comandos
 sem_t canProduce, canRemove;
 
 tecnicofs* fs;
@@ -41,7 +41,7 @@ static void parseArgs (long argc, char* const argv[]){
     numberThreads = atoi(argv[3]);
     numberBuckets = atoi(argv[4]);
     if (numberThreads<=0 || numberBuckets<=0) {
-        fprintf(stderr, "Invalid number of threads\n");
+        fprintf(stderr, "Invalid number of threads/buckets\n");
         displayUsage(argv[0]);
     }
     #ifndef SYNC
@@ -117,7 +117,7 @@ void *processInput(){
             }
         }
     }
-    insertCommand("q exit exit\n");
+    insertCommand("q exit exit\n");     //comando a ser incerido em ultimo lugar
     fclose(inputFile);
     return NULL;
 }
@@ -182,8 +182,8 @@ void* applyCommands(){
                 }
                 break;
             
-            case 'q':
-                stop=1;//nao ha mais comandos a ser processados, as threads seguintes podem parar
+            case 'q':       //nao ha mais comandos a ser processados
+                stop=1;     //as threads seguintes podem parar
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
                 pthread_exit(NULL);
@@ -199,18 +199,28 @@ void* applyCommands(){
     return NULL;
 }
 
-void initSemaforos(){
+void inits(){
+    mutex_init(&commandsLock);
     se_init(&canProduce, ARRAY_SIZE);   //inicialmente ARRAY_SIZE vagas no array
     se_init(&canRemove, 0);             //Array inicialmente vazio
+}
+
+void destroys(){
+    se_destroy(&canRemove);
+    se_destroy(&canProduce);
+    mutex_destroy(&commandsLock);
 }
 
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
     int err, join;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
+    if(!workers){
+		perror("failed to allocate workers");
+		exit(EXIT_FAILURE);
+    }
+    inits();
     
-    initSemaforos();
-
     TIMER_READ(startTime);
     for(int i = 0; i < numberThreads+1; i++){
         if(!i)  //processInput
@@ -229,18 +239,15 @@ void runThreads(FILE* timeFp){
             perror("Can't join thread");
         }
     }
-
     TIMER_READ(stopTime);
+
     fprintf(timeFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     free(workers);
-    se_destroy(&canProduce);
-    se_destroy(&canRemove);
+    destroys();
 }
-
 
 int main(int argc, char* argv[]) {
     parseArgs(argc, argv);
-    mutex_init(&commandsLock);
 
     FILE * outputFp = openOutputFile();
     fs = new_tecnicofs();
@@ -250,7 +257,6 @@ int main(int argc, char* argv[]) {
     fflush(outputFp);
     fclose(outputFp);
 
-    mutex_destroy(&commandsLock);
     free_tecnicofs(fs);
     exit(EXIT_SUCCESS);
 }

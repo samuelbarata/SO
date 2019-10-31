@@ -21,17 +21,21 @@ tecnicofs* new_tecnicofs(){
 	fs->nextINumber = 0;
 	fs->bstRoot = malloc(sizeof(node*)*numberBuckets);
 	fs->bstLock = malloc(sizeof(syncMech)*numberBuckets);
-	for (int i = 0; i<numberBuckets; i++){
-		fs->bstRoot[i] = NULL;
-		sync_init(&(fs->bstLock[i]));
+	if (!fs->bstRoot || !fs->bstLock){
+		perror("failed to allocate tecnicofs");
+		exit(EXIT_FAILURE);
+	}
+	for (int index = 0; index<numberBuckets; index++){
+		fs->bstRoot[index] = NULL;
+		sync_init(&(fs->bstLock[index]));
 	}
 	return fs;
 }
 
 void free_tecnicofs(tecnicofs* fs){
-	for(int i = 0; i<numberBuckets; i++){
-		free_tree(fs->bstRoot[i]);
-		sync_destroy(&(fs->bstLock[i]));
+	for(int index = 0; index<numberBuckets; index++){
+		free_tree(fs->bstRoot[index]);
+		sync_destroy(&(fs->bstLock[index]));
 	}
 	free(fs->bstLock);
 	free(fs->bstRoot);
@@ -39,34 +43,34 @@ void free_tecnicofs(tecnicofs* fs){
 }
 
 void create(tecnicofs* fs, char *name, int inumber){
-	int hashPlace = hash(name, numberBuckets);
-	sync_wrlock(&(fs->bstLock[hashPlace]));
-	fs->bstRoot[hashPlace] = insert(fs->bstRoot[hashPlace], name, inumber);
-	sync_unlock(&(fs->bstLock[hashPlace]));
+	int index = hash(name, numberBuckets);
+	sync_wrlock(&(fs->bstLock[index]));
+	fs->bstRoot[index] = insert(fs->bstRoot[index], name, inumber);
+	sync_unlock(&(fs->bstLock[index]));
 }
 
 void delete(tecnicofs* fs, char *name){
-	int hashPlace = hash(name, numberBuckets);
-	sync_wrlock(&(fs->bstLock[hashPlace]));
-	fs->bstRoot[hashPlace] = remove_item(fs->bstRoot[hashPlace], name);
-	sync_unlock(&(fs->bstLock[hashPlace]));
+	int index = hash(name, numberBuckets);
+	sync_wrlock(&(fs->bstLock[index]));
+	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
+	sync_unlock(&(fs->bstLock[index]));
 }
 
 int lookup(tecnicofs* fs, char *name){
 	int inumber = 0;
-	int hashPlace = hash(name, numberBuckets);
-	sync_rdlock(&(fs->bstLock[hashPlace]));
+	int index = hash(name, numberBuckets);
+	sync_rdlock(&(fs->bstLock[index]));
 	
-	node* searchNode = search(fs->bstRoot[hashPlace], name);
+	node* searchNode = search(fs->bstRoot[index], name);
 	if ( searchNode ) {
 		inumber = searchNode->inumber;
 	}
-	sync_unlock(&(fs->bstLock[hashPlace]));
+	sync_unlock(&(fs->bstLock[index]));
 	return inumber;
 }
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
-	for (int i = 0; i < numberBuckets; i++){
-		print_tree(fp, fs->bstRoot[i]);
+	for (int index = 0; index < numberBuckets; index++){
+		print_tree(fp, fs->bstRoot[index]);
 	}
 }
