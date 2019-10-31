@@ -23,7 +23,7 @@ int tailQueue = 0;
 pthread_mutex_t commandsLock;
 sem_t canProduce, canRemove;
 
-tecnicofs** fs;
+tecnicofs* fs;
 
 static void displayUsage (const char* appName){
     fprintf(stderr, "Usage: %s input_filepath output_filepath numthreads[>=1] numbuckets[>=1]\n", appName);
@@ -206,7 +206,6 @@ void initSemaforos(){
 
 void runThreads(FILE* timeFp){
     TIMER_T startTime, stopTime;
-    
     int err, join;
     pthread_t* workers = (pthread_t*) malloc((numberThreads+1) * sizeof(pthread_t));
     

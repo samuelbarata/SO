@@ -7,19 +7,19 @@
 #include "globals.h"
 
 typedef struct tecnicofs {
-    node* bstRoot;
+    node** bstRoot;
     int nextINumber;
-    syncMech bstLock;
+    syncMech* bstLock;
 } tecnicofs;
 
 extern int numberBuckets;
 
-int obtainNewInumber(tecnicofs** fs);
-tecnicofs** new_tecnicofs();
-void free_tecnicofs(tecnicofs** fs);
-void create(tecnicofs **fs, char *name, int inumber);
-void delete(tecnicofs **fs, char *name);
-int lookup(tecnicofs **fs, char *name);
-void print_tecnicofs_tree(FILE * fp, tecnicofs **fs);
+int obtainNewInumber(tecnicofs* fs);
+tecnicofs* new_tecnicofs();
+void free_tecnicofs(tecnicofs* fs);
+void create(tecnicofs *fs, char *name, int inumber);
+void delete(tecnicofs *fs, char *name);
+int lookup(tecnicofs *fs, char *name);
+void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
 
 #endif /* FS_H */
