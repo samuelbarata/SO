@@ -50,7 +50,7 @@ for test_in in `ls ${input}`; do
         fi
 	#echo ${k}.${test_in}.${i}
         cat ${test_stdout} | grep '^TecnicoFS'
-		rm -f -r ${test_stdout}
+	#rm -f -r ${test_stdout}
     	done
     done
 done

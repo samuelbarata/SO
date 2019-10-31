@@ -60,7 +60,9 @@ int insertCommand(char* data) {
 }
 
 char* removeCommand() {
-    if(numberCommands > 0){ //já está dentro dum lock na apply commands
+    se_wait(&canRemove);
+    mutex_lock(&commandsLock);
+    if(numberCommands > 0){
         numberCommands--;
         return inputCommands[(headQueue++)%ARRAY_SIZE];
     }
@@ -136,8 +138,6 @@ void* applyCommands(){
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
         int iNumber, newInumber;
         
-        se_wait(&canRemove);
-        mutex_lock(&commandsLock);
         const char* command = removeCommand();
         
         if(stop){  //nao ha mais comandos   
@@ -183,7 +183,7 @@ void* applyCommands(){
                 break;
             
             case 'q':
-                stop=1;
+                stop=1;//nao ha mais comandos a ser processados, as threads seguintes podem parar
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
                 pthread_exit(NULL);

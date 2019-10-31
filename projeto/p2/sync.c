@@ -46,43 +46,35 @@ void sync_unlock(syncMech* sync){
 }
 
 void mutex_init(pthread_mutex_t* mutex){
-    //#if defined (RWLOCK) || defined (MUTEX)
-        int ret = pthread_mutex_init(mutex, NULL);
-        if(ret != 0){
-            perror("mutex_init failed\n");
-            exit(EXIT_FAILURE);
-        }
-    //#endif
+    int ret = pthread_mutex_init(mutex, NULL);
+    if(ret != 0){
+        perror("mutex_init failed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void mutex_destroy(pthread_mutex_t* mutex){
-    //#if defined (RWLOCK) || defined (MUTEX)
-        int ret = pthread_mutex_destroy(mutex);
-        if(ret != 0){
-            perror("mutex_destroy failed\n");
-            exit(EXIT_FAILURE);
-        }
-    //#endif
+    int ret = pthread_mutex_destroy(mutex);
+    if(ret != 0){
+        perror("mutex_destroy failed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void mutex_lock(pthread_mutex_t* mutex){
-    //#if defined (RWLOCK) || defined (MUTEX)
-        int ret = pthread_mutex_lock(mutex);
-        if(ret != 0){
-            perror("mutex_lock failed");
-            exit(EXIT_FAILURE);
-        }
-    //#endif
+    int ret = pthread_mutex_lock(mutex);
+    if(ret != 0){
+        perror("mutex_lock failed");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void mutex_unlock(pthread_mutex_t* mutex){
-    //#if defined (RWLOCK) || defined (MUTEX)
-        int ret = pthread_mutex_unlock(mutex);
-        if(ret != 0){
-            perror("mutex_unlock failed");
-            exit(EXIT_FAILURE);
-        }
-    //#endif
+    int ret = pthread_mutex_unlock(mutex);
+    if(ret != 0){
+        perror("mutex_unlock failed");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void se_wait(sem_t* id){
