@@ -136,7 +136,7 @@ void* applyCommands(){
     while(1){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
-        int iNumber, newInumber;
+        int iNumber;
         
         const char* command = removeCommand();
         
@@ -173,13 +173,8 @@ void* applyCommands(){
                 delete(fs, name);
                 break;
             case 'r':
-                iNumber = lookup(fs, name);         //inumber do ficheiro atual
-                newInumber = lookup(fs, newName);   //ficheiro novo existe?
                 mutex_unlock(&commandsLock);
-                if(iNumber && !newInumber){ //se rename se inumber != 0 e inumber novo == 0
-                    delete(fs, name);
-                    create(fs, newName, iNumber);
-                }
+                reName(fs, name, newName);
                 break;
             
             case 'q':       //nao ha mais comandos a ser processados

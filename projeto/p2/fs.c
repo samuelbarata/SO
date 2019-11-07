@@ -56,6 +56,33 @@ void delete(tecnicofs* fs, char *name){
 	sync_unlock(&(fs->bstLock[index]));
 }
 
+void reName(tecnicofs* fs, char *name, char *newName){
+	int iNumber, newiNumber, locked=FALSE;
+	int index0 = hash(name, numberBuckets);
+	int index1 = hash(newName, numberBuckets);
+	iNumber = lookup(fs, name);         //inumber do ficheiro atual
+	newiNumber = lookup(fs, newName);   //ficheiro novo existe?
+
+	if(!iNumber || newiNumber){ //se rename se not (inumber != 0 e inumber novo == 0)
+		return;
+	}
+	while (!locked){
+		locked = FALSE;
+		if(!sync_try_lock(&(fs->bstLock[index0]))){		//lock primeira arvore
+			if(!sync_try_lock(&(fs->bstLock[index1]))){	//lock segunda arvore
+				locked=TRUE;
+			}
+			else{
+				sync_unlock(&(fs->bstLock[index0]));	//se bloqueou a segunda e nao a primeira unlocka a primeira
+			}
+		}
+	}
+	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
+	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, iNumber);	//adiciona
+	sync_unlock(&(fs->bstLock[index1]));
+	sync_unlock(&(fs->bstLock[index0]));
+}
+
 int lookup(tecnicofs* fs, char *name){
 	int inumber = 0;
 	int index = hash(name, numberBuckets);
