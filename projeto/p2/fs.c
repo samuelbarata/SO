@@ -57,25 +57,28 @@ void delete(tecnicofs* fs, char *name){
 }
 
 void reName(tecnicofs* fs, char *name, char *newName, int inumber){
-	int locked=FALSE;
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
 
-	while (!locked){
-		locked = FALSE;
-		if(!sync_try_lock(&(fs->bstLock[index0]))){		//lock primeira arvore
-			if(!sync_try_lock(&(fs->bstLock[index1]))){	//lock segunda arvore
-				locked=TRUE;
-			}
-			else{
-				sync_unlock(&(fs->bstLock[index0]));	//se bloqueou a segunda e nao a primeira unlocka a primeira
+	if(index0!=index1)
+		for(int i=0, unlocked=TRUE; unlocked; usleep(MINGUA_CONSTANT*i), i++){
+			unlocked=TRUE;
+			if(!sync_try_lock(&(fs->bstLock[index0]))){		//lock primeira arvore
+				if(!sync_try_lock(&(fs->bstLock[index1])))	//lock segunda arvore
+					unlocked=FALSE;
+				else
+					sync_unlock(&(fs->bstLock[index0]));	//se bloqueou a segunda e nao a primeira unlocka a primeira
 			}
 		}
-	}
+	else
+		sync_wrlock(&(fs->bstLock[index1]));
+
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
 	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
+	
 	sync_unlock(&(fs->bstLock[index1]));
-	sync_unlock(&(fs->bstLock[index0]));
+	if(index0!=index1)
+		sync_unlock(&(fs->bstLock[index0]));
 }
 
 int lookup(tecnicofs* fs, char *name){

@@ -178,7 +178,6 @@ void* applyCommands(){
                 mutex_unlock(&commandsLock);
                 if(iNumber && !newiNumber)
                     reName(fs, name, newName, iNumber);
-                
                 break;
             
             case 'q':       //nao ha mais comandos a ser processados

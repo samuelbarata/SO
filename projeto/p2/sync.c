@@ -46,7 +46,8 @@ void sync_unlock(syncMech* sync){
 }
 
 int sync_try_lock(syncMech* sync){
-    return syncMech_try_lock(sync);
+    int ret = syncMech_try_lock(sync);
+    return ret;
 }
 
 void mutex_init(pthread_mutex_t* mutex){
