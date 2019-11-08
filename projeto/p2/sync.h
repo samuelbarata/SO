@@ -41,6 +41,7 @@ void sync_destroy(syncMech* sync);
 void sync_wrlock(syncMech* sync);
 void sync_rdlock(syncMech* sync);
 void sync_unlock(syncMech* sync);
+int sync_try_lock(syncMech* sync);
 void mutex_init(pthread_mutex_t* mutex);
 void mutex_lock(pthread_mutex_t* mutex);
 void mutex_unlock(pthread_mutex_t* mutex);

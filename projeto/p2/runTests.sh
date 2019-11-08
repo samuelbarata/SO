@@ -19,15 +19,15 @@ output=$2
 maxthreads=$3
 numbuckets=$4
 
-make clean > /dev/null
-make > /dev/null
-mkdir output 2> /dev/null
-mkdir output/temp 2> /dev/null
+make clean > /dev/null              #delete old binaries
+make > /dev/null                    #compile
+mkdir $output 2> /dev/null          #makes output directory if it doesn't exist yet
+mkdir $output/temp 2> /dev/null     #makes temp directory 
 
-for test_in in `ls ${input}`; do
-    for ((i=1 ; i<=$maxthreads ; i++))
+for test_in in `ls ${input}`; do        #percorre ficheiros input
+    for ((i=1 ; i<=$maxthreads ; i++))  #percorre threads
     do
-        if [ $i == 1 ] ; then
+        if [ $i == 1 ] ; then               #1 thread: nosync; 1 bucket;
             prog_name="tecnicofs-nosync"
             buckets=1
         else
@@ -35,24 +35,23 @@ for test_in in `ls ${input}`; do
             buckets=$numbuckets
         fi
 
-        test_out="${output}/${test_in}-${i}.txt"
-        test_stdout="${output}/temp/${test_in}-${i}.stdout"
+        test_out="${output}/${test_in}-${i}.txt"            #output teste
+        test_stdout="${output}/temp/${test_in}-${i}.stdout" #stdout para ficheiro
 
         echo "InputFile=${test_in} NumThreads=${i}"
         ./${prog_name} ${input}/${test_in} ${test_out} ${i} ${buckets} > ${test_stdout}
-        rv_student=$?
+        rv_student=$?   #output do programa
 
-        if [ ${rv_student} == 139 ]; then
+        if [ ${rv_student} == 139 ]; then   #segfault
             echo -e "${RED}ERROR${NC}: ${YELLOW}SEGFAULT${NC}: ${test_in}"
             continue
         fi
-        if [ ${rv_student} != 0 ]; then
+        if [ ${rv_student} != 0 ]; then     #other error
             echo -e "${test_in}:${RED}ERROR${NC}: Program return ${YELLOW}${rv_student}${NC}!"
             continue
         fi
-
-        cat ${test_stdout} | grep '^TecnicoFS'
-
+        cat ${test_stdout} | grep '^TecnicoFS'              #print execution time
+    
     done
 done
-rm -f -r ${output}/temp
+rm -f -r $output/temp       #removes temp folder and .stdout files

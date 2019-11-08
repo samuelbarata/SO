@@ -136,14 +136,14 @@ void* applyCommands(){
     while(1){
         char token;
         char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
-        int iNumber, newInumber;
+        int iNumber, newiNumber;
         
         const char* command = removeCommand();
         
         if(stop){  //nao ha mais comandos   
             mutex_unlock(&commandsLock);
             se_post(&canRemove);
-            pthread_exit(NULL);
+            return NULL;
         }
         else if (command == NULL){
             mutex_unlock(&commandsLock);
@@ -173,20 +173,18 @@ void* applyCommands(){
                 delete(fs, name);
                 break;
             case 'r':
-                iNumber = lookup(fs, name);         //inumber do ficheiro atual
-                newInumber = lookup(fs, newName);   //ficheiro novo existe?
+            	iNumber = lookup(fs, name);         //inumber do ficheiro atual
+                newiNumber = lookup(fs, newName);   //ficheiro novo existe?
                 mutex_unlock(&commandsLock);
-                if(iNumber && !newInumber){ //se rename se inumber != 0 e inumber novo == 0
-                    delete(fs, name);
-                    create(fs, newName, iNumber);
-                }
+                if(iNumber && !newiNumber)
+                    reName(fs, name, newName, iNumber);
                 break;
             
             case 'q':       //nao ha mais comandos a ser processados
                 stop=1;     //as threads seguintes podem parar
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
-                pthread_exit(NULL);
+                return NULL;
                 break;
                 
             default: { /* error */
@@ -203,6 +201,7 @@ void inits(){
     mutex_init(&commandsLock);
     se_init(&canProduce, ARRAY_SIZE);   //inicialmente ARRAY_SIZE vagas no array
     se_init(&canRemove, 0);             //Array inicialmente vazio
+    srand(time(NULL));
 }
 
 void destroys(){

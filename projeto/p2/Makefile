@@ -65,25 +65,13 @@ tecnicofs-rwlock: lib/bst-rwlock.o fs-rwlock.o sync-rwlock.o main-rwlock.o lib/h
 clean:
 	@echo Cleaning...
 	rm -f $(OBJS) $(TARGETS)
-	@rm -f *.out core inputs/*.out
+
+cleaner: 
+	@echo Cleaning...
+	rm -f $(OBJS) $(TARGETS)
+	@rm -f *.out core inputs/*.out .gdb_history *.o
 	@rm -f -r output/
 	@clear
 
 run: all
-	@./tester.sh tecnicofs-nosync 0 100
-	@./tester.sh tecnicofs-mutex 1 100
-	@./tester.sh tecnicofs-mutex 2 100
-	@./tester.sh tecnicofs-mutex 4 100
-	@./tester.sh tecnicofs-mutex 8 100
-	@./tester.sh tecnicofs-mutex 16 500
-	@./tester.sh tecnicofs-mutex 32 500
-	@./tester.sh tecnicofs-rwlock 1 100
-	@./tester.sh tecnicofs-rwlock 2 100
-	@./tester.sh tecnicofs-rwlock 4 100
-	@./tester.sh tecnicofs-rwlock 8 100
-	@./tester.sh tecnicofs-rwlock 16 500
-	@./tester.sh tecnicofs-rwlock 32 500
-	@#make run
-
-irun: all
-	./tecnicofs-mutex inputs/test03.txt myout.out 9 2
+	./runTests.sh inputs outputs 20 7
