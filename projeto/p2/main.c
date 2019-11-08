@@ -143,7 +143,7 @@ void* applyCommands(){
         if(stop){  //nao ha mais comandos   
             mutex_unlock(&commandsLock);
             se_post(&canRemove);
-            pthread_exit(NULL);
+            return NULL;
         }
         else if (command == NULL){
             mutex_unlock(&commandsLock);
@@ -184,7 +184,7 @@ void* applyCommands(){
                 stop=1;     //as threads seguintes podem parar
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
-                pthread_exit(NULL);
+                return NULL;
                 break;
                 
             default: { /* error */
@@ -201,6 +201,7 @@ void inits(){
     mutex_init(&commandsLock);
     se_init(&canProduce, ARRAY_SIZE);   //inicialmente ARRAY_SIZE vagas no array
     se_init(&canRemove, 0);             //Array inicialmente vazio
+    srand(time(NULL));
 }
 
 void destroys(){
