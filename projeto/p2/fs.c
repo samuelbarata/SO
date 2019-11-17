@@ -61,7 +61,7 @@ void reName(tecnicofs* fs, char *name, char *newName, int inumber){
 	int index1 = hash(newName, numberBuckets);
 
 	if(index0!=index1)
-		for(int i=0, unlocked=TRUE; unlocked; usleep(MINGUA_CONSTANT*i), i++){
+		for(int i=0, unlocked=TRUE; unlocked; usleep(rand()%100 * MINGUA_CONSTANT*i*i), i++){	//devolve valor  [0, 0.1] * i^2
 			unlocked=TRUE;
 			if(!sync_try_lock(&(fs->bstLock[index0]))){		//lock primeira arvore
 				if(!sync_try_lock(&(fs->bstLock[index1])))	//lock segunda arvore

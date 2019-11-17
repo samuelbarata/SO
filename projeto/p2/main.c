@@ -18,7 +18,7 @@ int stop = 0;           //variavel global avisa quando todos os comandos foram p
 char inputCommands[ARRAY_SIZE][MAX_INPUT_SIZE];
 int numberCommands = 0; //numero de comandos a processar
 int headQueue = 0;      //onde remover do vetor
-int tailQueue = 0;      //onde incerir no vetor
+int tailQueue = 0;      //onde inserir no vetor
 
 pthread_mutex_t commandsLock;   //lock do vetor de comandos
 sem_t canProduce, canRemove;
@@ -117,7 +117,7 @@ void *processInput(){
             }
         }
     }
-    insertCommand("q exit exit\n");     //comando a ser incerido em ultimo lugar
+    insertCommand("q exit exit\n");     //comando a ser inserido em ultimo lugar
     fclose(inputFile);
     return NULL;
 }
@@ -143,7 +143,7 @@ void* applyCommands(){
         if(stop){  //nao ha mais comandos   
             mutex_unlock(&commandsLock);
             se_post(&canRemove);
-            pthread_exit(NULL);
+            return NULL;
         }
         else if (command == NULL){
             mutex_unlock(&commandsLock);
@@ -184,7 +184,7 @@ void* applyCommands(){
                 stop=1;     //as threads seguintes podem parar
                 se_post(&canRemove);
                 mutex_unlock(&commandsLock);
-                pthread_exit(NULL);
+                return NULL;
                 break;
                 
             default: { /* error */
@@ -201,6 +201,7 @@ void inits(){
     mutex_init(&commandsLock);
     se_init(&canProduce, ARRAY_SIZE);   //inicialmente ARRAY_SIZE vagas no array
     se_init(&canRemove, 0);             //Array inicialmente vazio
+    srand(time(NULL));
 }
 
 void destroys(){

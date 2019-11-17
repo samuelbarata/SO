@@ -8,6 +8,6 @@
 #define DELAY 5000
 #define FALSE 0
 #define TRUE 1
-#define MINGUA_CONSTANT 0.01
+#define MINGUA_CONSTANT 0.0001
 
 #endif /* CONSTANTS_H */
