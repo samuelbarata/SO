@@ -16,4 +16,6 @@ output
 foo*
 *.o
 test
-tecnicofs*
+tecnicofs-mutex
+tecnicofs-nosync
+tecnicofs-rwlock
