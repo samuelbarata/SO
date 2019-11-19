@@ -189,3 +189,19 @@ int inode_set(int inumber, char *fileContents, int len){
     unlock_inode_table();
     return 0;
 }
+
+permission *permConv(char* perms){
+    int atoiPerms = atoi(perms);
+    int *res = malloc(sizeof(int)*2);
+    if(atoiPerms<10)
+        res[1]=NONE;
+    else
+        res[1] = atoiPerms%10;
+    res[0] = atoiPerms/10;
+    for(int perm=0; perm<2 ;perm++){
+        if(res[perm] & 0b11111100){ //permission is not valid
+            res[perm] = TECNICOFS_ERROR_OTHER;
+        }
+    }
+    return res;
+}

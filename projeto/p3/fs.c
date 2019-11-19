@@ -5,6 +5,7 @@
 #include <string.h>
 #include "sync.h"
 #include "lib/hash.h"
+#include "lib/inodes.h"
 
 
 int obtainNewInumber(tecnicofs* fs) {//como os inumbers são independentes do bucket gravados em fs[0]
@@ -29,20 +30,27 @@ tecnicofs* new_tecnicofs(){
 		fs->bstRoot[index] = NULL;
 		sync_init(&(fs->bstLock[index]));
 	}
+	inode_table_init();
 	return fs;
 }
 
 void free_tecnicofs(tecnicofs* fs){
+	inode_table_destroy();
 	for(int index = 0; index<numberBuckets; index++){
 		free_tree(fs->bstRoot[index]);
 		sync_destroy(&(fs->bstLock[index]));
 	}
 	free(fs->bstLock);
 	free(fs->bstRoot);
-	free(fs);
+	free(fs);	
 }
 
-void create(tecnicofs* fs, char *name, int inumber){
+void create(tecnicofs* fs, char *name, int inumber,uid_t owner ,permission *perms){
+	if(inode_create(owner, perms[0], perms[1])<0){
+		free(perms);
+		return;
+	}
+	free(perms);
 	int index = hash(name, numberBuckets);
 	sync_wrlock(&(fs->bstLock[index]));
 	fs->bstRoot[index] = insert(fs->bstRoot[index], name, inumber);

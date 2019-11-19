@@ -2,7 +2,7 @@
 #include "../tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert.h> //https://stackoverflow.com/questions/1571340/what-is-the-assert-function
 
 
 int main(int argc, char** argv) {
