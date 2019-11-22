@@ -22,6 +22,7 @@ int inode_delete(int inumber);
 int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *othersPerm,
                      char* fileContents, int len);
 int inode_set(int inumber, char *contents, int len);
-permission *permConv(char* perms);    //recebe string com permições; devolve array int [owner, others]
+
+permission *permConv(char* perms);    //recebe string com permissões; devolve array int [owner, others]
 
 #endif /* INODES_H */
