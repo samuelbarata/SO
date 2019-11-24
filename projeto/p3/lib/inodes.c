@@ -141,9 +141,7 @@ int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *other
         *othersPerm = inode_table[inumber].othersPermissions;
 
     if(fileContents && len > 0 && inode_table[inumber].fileContent){
-        if(len > ((int) strlen(inode_table[inumber].fileContent)))
-            len = ((int) strlen(inode_table[inumber].fileContent) + 1);
-        strncpy(fileContents, inode_table[inumber].fileContent, len-1);
+        strncpy(fileContents, inode_table[inumber].fileContent, len);
         fileContents[len] = '\0';
         unlock_inode_table();
         return strlen(fileContents);
@@ -190,10 +188,10 @@ int inode_set(int inumber, char *fileContents, int len){
     return 0;
 }
 
-permission *permConv(char* perms){
+permission *permConv(char* perms){  // 1-W 2-R 3-WR
     int atoiPerms = atoi(perms);
     int *res = malloc(sizeof(int)*2);
-    if(atoiPerms<10)
+    if(atoiPerms<10)    // se perm < 10 entao so tem um numero, nao devia de ser erro?
         res[1]=NONE;
     else
         res[1] = atoiPerms%10;
