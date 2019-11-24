@@ -192,10 +192,10 @@ permission *permConv(char* perms){  // 1-W 2-R 3-WR
     int atoiPerms = atoi(perms);
     permission *res = malloc(sizeof(permission)*2);
     if(atoiPerms<10)
-        res[1]=NONE;
+        res[0]=NONE;
     else
-        res[1] = atoiPerms%10;
-    res[0] = atoiPerms/10;
+        res[0] = atoiPerms%10;
+    res[1] = atoiPerms/10;
     for(int perm=0; perm<2 ;perm++){
         if(res[perm] & 0b11111100){ //permission is not valid
             res[perm] = TECNICOFS_ERROR_OTHER;
