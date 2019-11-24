@@ -42,6 +42,16 @@ int tfsMount(char * address){
 	/* Cria socket stream */
 	if ((sockfd= socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		err_dump("client: can't open stream socket");
+
+	/* limpar o address */
+	bzero((char*) &serv_addr, sizeof(serv_addr));
+
+	/* valores para o serv_addr */
+	serv_addr.sun_family = AF_UNIX;
+	strcpy(serv_addr.sun_path, UNIXSTR_PATH);
+	servlen = strlen(serv_addr.path) + sizeof(serv_addr.sun_family);
+	 
+
 	
 
 
