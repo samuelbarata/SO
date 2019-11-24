@@ -10,4 +10,8 @@
 #define TRUE 1
 #define MINGUA_CONSTANT 0.0001
 
+#include <stdlib.h>
+#include <stdio.h>
+void errorLog(char* A){fprintf(stderr,"%s", A);exit(EXIT_FAILURE);}
+
 #endif /* CONSTANTS_H */

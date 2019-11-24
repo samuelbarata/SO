@@ -64,14 +64,10 @@ void* applyCommands(char* command){
         int iNumber, newiNumber;
         
         //const char* command = removeCommand();
-        
-        if(stop){  //nao ha mais comandos   
-            mutex_unlock(&commandsLock);
-            return NULL;
-        }
+
         else if (command == NULL){
             mutex_unlock(&commandsLock);
-            continue;
+            return NULL;
         }
         
         sscanf(command, "%c %s %s", &token, arg1, arg2);
@@ -101,16 +97,10 @@ void* applyCommands(char* command){
                 if(iNumber && !newiNumber)
                     reName(fs, arg1, arg2, iNumber);
                 break;
-            
-            case 'q':       //nao ha mais comandos a ser processados
-                stop=1;     //as threads seguintes podem parar
-                mutex_unlock(&commandsLock);
-                return NULL;
-                break;
                 
             default: { /* error */
                 mutex_unlock(&commandsLock);
-                fprintf(stderr, "Error: could not apply command %c\n", token);
+                fprintf(stderr, "Error: could not apply command %c\n", token);  //TODO: devolver erro comando not valid em vez de crashar server
                 exit(EXIT_FAILURE);
             }
         }
@@ -126,7 +116,7 @@ void inits(){
 
     /* Cria socket stream */
 	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		err_dump("server: can't open stream socket");
+		errorLog("server: can't open stream socket");
 
     /*Elimina o nome, para o caso de já existir.*/
 	unlink(global_SocketName);
@@ -136,7 +126,7 @@ void inits(){
 	strcpy(serv_addr.sun_path, global_SocketName);
 	servlen = strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
 	if (bind(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
-		err_dump("server, can't bind local address");
+		errorLog("server, can't bind local address");
 	
 	listen(sockfd, 5);
 
