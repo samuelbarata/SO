@@ -19,6 +19,7 @@ output=$2
 maxthreads=$3
 numbuckets=$4
 
+make > /dev/null                    #compile
 mkdir $output 2> /dev/null          #makes output directory if it doesn't exist yet
 mkdir $output/temp 2> /dev/null     #makes temp directory 
 
