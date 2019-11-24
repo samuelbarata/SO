@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <pthread.h>
 #include "lib/timer.h"
 #include "lib/inodes.h"
@@ -12,6 +13,8 @@
 char* global_outputFile = NULL;
 int numberBuckets = 0;
 int stop = 0;           //variavel global avisa quando todos os comandos foram processados
+int sockfd;             //socket servidor
+pthread_t* workers=NULL;    //ligacoes existentes
 
 int numberCommands = 0; //numero de comandos a processar
 
@@ -40,69 +43,9 @@ static void parseArgs (long argc, char* const argv[]){
     }
 }
 
-char* removeCommand() {
-    mutex_lock(&commandsLock);
-    if(numberCommands > 0){
-        numberCommands--;
-        return NULL;
-    }
-    return NULL;
-}
-
 void errorParse(int lineNumber){
     fprintf(stderr, "Error: line %d invalid\n", lineNumber);
     exit(EXIT_FAILURE);
-}
-
-void *processInput(){
-    FILE* inputFile;
-    inputFile = fopen(global_SocketName, "r");
-    if(!inputFile){
-        fprintf(stderr, "Error: Could not read %s\n", global_SocketName);
-        exit(EXIT_FAILURE);
-    }
-    char line[MAX_INPUT_SIZE];
-    int lineNumber = 0;
-
-    while (fgets(line, sizeof(line)/sizeof(char), inputFile)) {
-        char token;
-        char name[MAX_INPUT_SIZE], newName[MAX_INPUT_SIZE];
-        lineNumber++;
-
-        int numTokens = sscanf(line, "%c %s %s", &token, name, newName);
-
-        /* perform minimal validation */
-        if (numTokens < 1) {
-            continue;
-        }
-        switch (token) {
-            case 'd':   //delete
-            case 'x':   //close
-                if(numTokens != 2)
-                    errorParse(lineNumber);
-                if(insertCommand(line))
-                    break;
-                return NULL;
-            case 'c':   //create
-            case 'r':   //rename
-            case 'o':   //open
-            case 'l':   //read
-            case 'w':   //write
-                if(numTokens != 3)
-                    errorParse(lineNumber);
-                if(insertCommand(line))
-                    break;
-                return NULL;
-            case '#':   //comment
-                break;
-            default: { /* error */
-                errorParse(lineNumber);
-            }
-        }
-    }
-    insertCommand("q exit exit\n");     //comando a ser inserido em ultimo lugar
-    fclose(inputFile);
-    return NULL;
 }
 
 FILE * openOutputFile() {
@@ -115,27 +58,23 @@ FILE * openOutputFile() {
     return fp;
 }
 
-void* applyCommands(){
-    while(1){
+void* applyCommands(char* command){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
         
-        const char* command = removeCommand();
+        //const char* command = removeCommand();
         
         if(stop){  //nao ha mais comandos   
             mutex_unlock(&commandsLock);
-            se_post(&canRemove);
             return NULL;
         }
         else if (command == NULL){
             mutex_unlock(&commandsLock);
-            se_post(&canRemove);
             continue;
         }
         
         sscanf(command, "%c %s %s", &token, arg1, arg2);
-        se_post(&canProduce);
 
         switch (token) {
             case 'c':
@@ -165,7 +104,6 @@ void* applyCommands(){
             
             case 'q':       //nao ha mais comandos a ser processados
                 stop=1;     //as threads seguintes podem parar
-                se_post(&canRemove);
                 mutex_unlock(&commandsLock);
                 return NULL;
                 break;
@@ -176,38 +114,23 @@ void* applyCommands(){
                 exit(EXIT_FAILURE);
             }
         }
-    }
     return NULL;
 }
 
-void inits(){
+void inits(){ 
+    struct sockaddr_un serv_addr;
+    int servlen;
+
     mutex_init(&commandsLock);
     srand(time(NULL));
-}
 
-void destroys(){
-    mutex_destroy(&commandsLock);
-}
-
-void *newClient(){
-
-
-    return NULL;
-}
-
-void initSocket(){
-    pthread_t* workers=NULL;
-    int clients=0, err;
-
-    int sockfd, newsockfd, clilen, childpid, servlen;
-	struct sockaddr_un cli_addr, serv_addr;
     /* Cria socket stream */
 	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		err_dump("server: can't open stream socket");
 
     /*Elimina o nome, para o caso de já existir.*/
-	unlink(global_SocketName); 
-    
+	unlink(global_SocketName);
+
     bzero((char *)&serv_addr, sizeof(serv_addr));
 	serv_addr.sun_family = AF_UNIX;
 	strcpy(serv_addr.sun_path, global_SocketName);
@@ -216,6 +139,22 @@ void initSocket(){
 		err_dump("server, can't bind local address");
 	
 	listen(sockfd, 5);
+
+}
+
+
+void *newClient(void* socket){
+    int socketfd = (int)socket;
+    printf("socket: %d\n",socketfd);
+
+    return NULL;
+}
+
+void connections(){
+    int clients=0, err;
+
+    int newsockfd, clilen, childpid;
+	struct sockaddr_un cli_addr;
 
     for(;;){
 		clilen = sizeof(cli_addr);
@@ -227,7 +166,7 @@ void initSocket(){
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
         workers[clients]=NULL;  //marca o fim do array
 
-        err = pthread_create(&workers[clients-1], NULL, newClient, NULL);
+        err = pthread_create(&workers[clients-1], NULL, newClient, (void*)newsockfd);
         if (err){
             perror("Can't create thread");
             exit(EXIT_FAILURE);
@@ -235,35 +174,36 @@ void initSocket(){
 	}
 }
 
-void exitServer(pthread_t* workers, int newsockfd){
+void exitServer(){
     int join;
     pthread_t *pointer; //percorre os workers
-    for(pointer=workers; *pointer!=NULL; pointer++) {
+    close(sockfd);      //não deixa receber mais ligações
+    for(pointer=workers; *pointer!=NULL; pointer++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(*pointer, NULL);
         if(join){
             perror("Can't join thread");
         }
     }
-    close(newsockfd);
-    exit(EXIT_SUCCESS);
-}
-
-
-
-
-
-
-int main(int argc, char* argv[]) {
-    parseArgs(argc, argv);
-
-    FILE * outputFp = openOutputFile();
-    fs = new_tecnicofs();
-    runThreads(stdout);
-
+    mutex_destroy(&commandsLock);
+    
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);
 
     free_tecnicofs(fs);
+
     exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char* argv[]) {
+    signal(SIGINT, exitServer);
+    parseArgs(argc, argv);
+
+    FILE * outputFp = openOutputFile();
+    fs = new_tecnicofs();
+
+    inits();
+    connections();
+
+    exit(EXIT_SUCCESS); //nunca usado
 }

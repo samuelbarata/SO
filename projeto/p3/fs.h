@@ -5,6 +5,7 @@
 #include "lib/bst.h"
 #include "sync.h"
 #include "globals.h"
+#include "tecnicofs-api-constants.h"
 
 typedef struct tecnicofs {
     node** bstRoot;
