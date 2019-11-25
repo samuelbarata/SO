@@ -19,3 +19,4 @@ test
 tecnicofs-mutex
 tecnicofs-nosync
 tecnicofs-rwlock
+client-api-test-create.sh
