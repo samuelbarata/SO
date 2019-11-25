@@ -138,7 +138,7 @@ void inits(){
 void *newClient(void* socket){
     int socketfd = (int)socket;
     printf("socket: %d\n",socketfd);
-
+    
     return NULL;
 }
 
@@ -170,14 +170,13 @@ void exitServer(){
     int join;
     pthread_t *pointer; //percorre os workers
     close(sockfd);      //não deixa receber mais ligações
-    for(pointer=workers; *pointer!=NULL; pointer++) {       //espera que threads acabem os trabalhos dos clientes
+    for(pointer=workers; pointer!=NULL; pointer++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(*pointer, NULL);
         if(join){
             perror("Can't join thread");
         }
     }
-    mutex_destroy(&commandsLock);
-    
+    mutex_destroy(&commandsLock);   
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);

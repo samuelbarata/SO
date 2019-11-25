@@ -20,3 +20,6 @@ tecnicofs-mutex
 tecnicofs-nosync
 tecnicofs-rwlock
 client-api-test-create.sh
+client-api-test-delete.sh
+client-api-test-read.sh
+client-api-test-success.sh
