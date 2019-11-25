@@ -35,18 +35,34 @@ int tfsWrite(int fd, char *buffer, int len){
 }
 
 int tfsMount(char * address){
+	// para o cliente ligar ao server
+	
 	int sockfd, servlen;
 	struct sockaddr_un serv_addr;
-
 
 	/* Cria socket stream */
 	if ((sockfd= socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		err_dump("client: can't open stream socket");
-	
 
+	/* limpar o address */
+	bzero((char*) &serv_addr, sizeof(serv_addr));
+
+	/* valores para o serv_addr */
+	serv_addr.sun_family = AF_UNIX;
+	strcpy(serv_addr.sun_path, UNIXSTR_PATH);
+	servlen = strlen(serv_addr.path) + sizeof(serv_addr.sun_family);
+
+	/* liga este socket ao server */
+	if(connect(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
+		err_dump("client: can't connect to server");
+
+	return 0;
 
 }
 
 int tfsUnmount(){
-
+	/*
+	close(sockfd);
+	exit(0);
+	*/
 }
