@@ -5,7 +5,6 @@
 #include <string.h>
 #include <assert.h>
 #include "bst.h"
-#include "../globals.h"
 
 void insertDelay(int cycles){
     for(int i=0; i < cycles; i++){}

@@ -21,6 +21,8 @@ int numberCommands = 0; //numero de comandos a processar
 pthread_mutex_t commandsLock;   //lock do vetor de comandos
 sem_t canProduce, canRemove;
 
+FILE* outputFp=NULL;
+
 tecnicofs* fs;
 
 static void displayUsage (const char* appName){
@@ -65,7 +67,7 @@ void* applyCommands(char* command){
         
         //const char* command = removeCommand();
 
-        else if (command == NULL){
+        if (command == NULL){
             mutex_unlock(&commandsLock);
             return NULL;
         }
@@ -126,7 +128,7 @@ void inits(){
 	strcpy(serv_addr.sun_path, global_SocketName);
 	servlen = strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
 	if (bind(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
-		errorLog("server, can't bind local address");
+		errorLog("server: can't bind local address");
 	
 	listen(sockfd, 5);
 
@@ -150,7 +152,7 @@ void connections(){
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr,&clilen);
 		if(newsockfd < 0)
-			err_dump("server:accepterror");
+			errorLog("server: accept error");
 		
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
@@ -189,7 +191,7 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, exitServer);
     parseArgs(argc, argv);
 
-    FILE * outputFp = openOutputFile();
+    outputFp = openOutputFile();
     fs = new_tecnicofs();
 
     inits();

@@ -50,6 +50,8 @@ void se_wait(sem_t* );
 void se_post(sem_t* );
 void se_init(sem_t* ,unsigned int );
 void se_destroy(sem_t* );
+void errorLog(char* A);
+
 int do_nothing(void* a);
 
 #endif /* SYNC_H */

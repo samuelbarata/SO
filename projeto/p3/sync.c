@@ -119,3 +119,8 @@ int do_nothing(void* a){
     (void)a;
     return 0;
 }
+
+void errorLog(char* A){
+    fprintf(stderr,"%s", A);
+    exit(EXIT_FAILURE);
+}
