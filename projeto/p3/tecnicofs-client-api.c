@@ -5,11 +5,24 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
+#include "globals.h"
 
 int sockfd=-1;
 
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(strlen(filename)+6));
+	msg[0] = 'c';
+	msg[1] = ' ';
+	strcat(msg, filename);
+	msg[strlen(filename)+2]=' ';
+	msg[strlen(filename)+3]=ownerPermissions + '0';
+	msg[strlen(filename)+4]=othersPermissions + '0';
+	msg[strlen(filename)+5]='\0';
+	res = sendMsg(msg);
+	free(msg);
+	return res;
 }
 
 int tfsDelete(char *filename){
@@ -38,7 +51,6 @@ int tfsWrite(int fd, char *buffer, int len){
 
 int tfsMount(char * address){
 	// para o cliente ligar ao server
-	
 	int servlen;
 	struct sockaddr_un serv_addr;
 
@@ -66,4 +78,25 @@ int tfsUnmount(){
 	int res = close(sockfd);
 	sockfd=-1;
 	return res;
+}
+
+int sendMsg(char* msg){
+	int n;
+	//char recvline[MAX_INPUT_SIZE+1];
+	
+	/*Envia string para sockfd.
+	Note-se que o \0 não é enviado*/
+	n=strlen(msg);
+	if (write(sockfd, msg, n) != n)
+		return TECNICOFS_ERROR_OTHER;
+	/* Tenta ler string de sockfd.
+	Note-se que tem de terminar a string com \0 */
+	
+	/*
+	n = read(sockfd, recvline, MAX_INPUT_SIZE);
+	if (n<0)
+		return TECNICOFS_ERROR_OTHER;
+	recvline[n]=0;
+	/*Envia a string para stdout*/
+	/*fputs(recvline, stdout);*/
 }

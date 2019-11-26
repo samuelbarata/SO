@@ -61,5 +61,8 @@ cleaner:
 	@rm -f -r output/
 	@clear
 
-run: all
+runs: all
 	./tecnicofs-rwlock /tmp/mySocket myout.out 1
+
+runc: all
+	./client-api-test-create.sh /tmp/mySocket

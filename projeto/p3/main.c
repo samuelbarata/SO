@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 #include <pthread.h>
 #include "lib/timer.h"
 #include "lib/inodes.h"
@@ -64,8 +65,6 @@ void* applyCommands(char* command){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
-        
-        //const char* command = removeCommand();
 
         if (command == NULL){
             mutex_unlock(&commandsLock);
@@ -118,7 +117,7 @@ void inits(){
 
     /* Cria socket stream */
 	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		errorLog("server: can't open stream socket");
+		perror("server: can't open stream socket");
 
     /*Elimina o nome, para o caso de já existir.*/
 	unlink(global_SocketName);
@@ -128,7 +127,7 @@ void inits(){
 	strcpy(serv_addr.sun_path, global_SocketName);
 	servlen = strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
 	if (bind(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
-		errorLog("server: can't bind local address");
+		perror("server: can't bind local address");
 	
 	listen(sockfd, 5);
 
@@ -139,6 +138,23 @@ void *newClient(void* socket){
     int socketfd = (int)socket;
     printf("socket: %d\n",socketfd);
     
+    int n;
+	char line[MAX_INPUT_SIZE];
+	for (;;) {/* Lê uma linha do socket */
+		n = read(sockfd, line, MAX_INPUT_SIZE);
+        printf("%d\n", n);
+		if (n == 0)
+			return;
+		else if (n < 0)
+			perror("str_echo: read line error");
+		
+        printf("%s", line);
+		/*Reenvia a linha para o socket. n conta com o \0 da string, caso contrário perdia-se sempre um caracter!*/
+		/*if(write(sockfd,line,n)!=n)
+			perror("str_echo: write error");*/
+	}
+
+
     return NULL;
 }
 
@@ -152,7 +168,7 @@ void connections(){
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr,&clilen);
 		if(newsockfd < 0)
-			errorLog("server: accept error");
+			perror("server: accept error");
 		
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
