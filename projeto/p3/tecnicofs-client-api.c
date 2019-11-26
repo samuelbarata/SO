@@ -22,7 +22,6 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 	msg[strlen(filename)+5]='\0';
 	res = sendMsg(msg);
 	free(msg);
-	sleep(5);
 	printf("%d\n", res);
 	return res;
 }
@@ -97,7 +96,7 @@ int sendMsg(char* msg){
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
-	recvline[n]=0;
+	recvline[n]='\0';
 
 	return atoi(recvline);
 }

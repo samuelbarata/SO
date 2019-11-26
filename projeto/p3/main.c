@@ -66,14 +66,14 @@ FILE * openOutputFile() {
     return fp;
 }
 
-void* applyCommands(char* command, uid_t owner){
+int applyCommands(char* command, uid_t owner){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
 
         if (command == NULL){
             mutex_unlock(&commandsLock);
-            return NULL;
+            return 0;
         }
         
         sscanf(command, "%c %s %s", &token, arg1, arg2);
@@ -110,7 +110,7 @@ void* applyCommands(char* command, uid_t owner){
                 exit(EXIT_FAILURE);
             }
         }
-    return NULL;
+    return 0;
 }
 
 void inits(){ 
@@ -140,31 +140,42 @@ void inits(){
 
 
 void *newClient(void* cli){
-    client *cliente = (client*)cli;
-    printf("socket: %02d\n",cliente->socket);
+	sigset_t set;   //exemplo manual linux
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	if(pthread_sigmask(SIG_SETMASK, &set, NULL)){
+		perror("sig_mask: Failure");
+		pthread_exit(EXIT_FAILURE);
+	}
+	client *cliente = (client*)cli;
+	printf("socket: %02d\n",cliente->socket);
     
-    int n;
+	int n, res;
 	char line[MAX_INPUT_SIZE];
-    int error_code=0;
-    int error_code_size = sizeof(error_code);
+	int error_code=0;
+	int error_code_size = sizeof(error_code);
 	while(!error_code) {   //FIXME: check if socket still connected
-    	getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
-        if(error_code)
-            break;
-    	bzero(line, NULL);
+		getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
+	    if(error_code)
+	        break;
+		bzero(line, NULL);
 		n = read(cliente->socket, line, MAX_INPUT_SIZE);
 		if (n == 0)
 			continue;
 		else if (n < 0){
-			perror("str_echo: read line error");
+			perror("read from socket");
 			pthread_exit(EXIT_FAILURE);
-        }
+		}
 		printf("%s\n",line);
-		applyCommands(line, cliente->uid);
+		res = applyCommands(line, cliente->uid);
+		n = dprintf(cliente->socket, "%d", res);
+		if(n < 0){
+			perror("dprintf");
+		}
 	}
-    printf("exit: %02d\n",cliente->socket);
-    free(cliente);
-    return NULL;
+	printf("exit: %02d\n",cliente->socket);
+	free(cliente);
+	return NULL;
 }
 
 void connections(){
