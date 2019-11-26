@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include "globals.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,13 +7,16 @@
 #include <signal.h>
 #include <errno.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/ucred.h>
+
 #include "lib/timer.h"
 #include "lib/inodes.h"
-#include "globals.h"
 #include "fs.h"
 #include "sync.h"
-#include "unix.h"
 
+char* global_SocketName = NULL;
 char* global_outputFile = NULL;
 int numberBuckets = 0;
 int stop = 0;           //variavel global avisa quando todos os comandos foram processados
@@ -164,7 +168,8 @@ void *newClient(void* socket){
 void connections(){
     int clients=0, err;
     int ucred_len;
-    
+
+    struct ucred ucreds;    
 
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
