@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -161,16 +163,26 @@ void *newClient(void* socket){
 
 void connections(){
     int clients=0, err;
+    int ucred_len;
+    
 
-    int newsockfd, clilen, childpid;
+    int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
 
     for(;;){
 		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr,&clilen);
+		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr, &clilen);
 		if(newsockfd < 0)
 			perror("server: accept error");
-		
+
+		ucred_len = sizeof(struct ucred);
+        if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1)
+            return TECNICOFS_ERROR_OTHER;
+
+        // ver os UIDs
+        printf("Credenciais do processo no outro lado da ligação: ");
+        printf("pid=%ld, euid=%ld, egid=%ld\n", (long) ucreds.pid, (long) ucreds.uid, (long) ucreds.gid);
+
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
         workers[clients]=NULL;  //marca o fim do array
