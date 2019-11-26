@@ -140,15 +140,16 @@ void *newClient(void* socket){
     
     int n;
 	char line[MAX_INPUT_SIZE];
+    bzero(line, NULL);
 	for (;;) {/* Lê uma linha do socket */
 		n = read(sockfd, line, MAX_INPUT_SIZE);
-        printf("%d\n", n);
-		if (n == 0)
+		printf("%s", line);
+        if (n == 0)
 			return;
-		else if (n < 0)
+		else if (n < 0){
 			perror("str_echo: read line error");
-		
-        printf("%s", line);
+            pthread_exit(EXIT_FAILURE);
+        }
 		/*Reenvia a linha para o socket. n conta com o \0 da string, caso contrário perdia-se sempre um caracter!*/
 		/*if(write(sockfd,line,n)!=n)
 			perror("str_echo: write error");*/
