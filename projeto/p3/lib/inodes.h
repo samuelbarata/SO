@@ -6,7 +6,6 @@
 
 #define FREE_INODE -1
 #define INODE_TABLE_SIZE 50
-#define _GNU_SOURCE
 
 typedef struct inode_t {
     uid_t owner;

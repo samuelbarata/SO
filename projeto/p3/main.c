@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/ucred.h>
 
 #include "lib/timer.h"
 #include "lib/inodes.h"
@@ -67,7 +66,7 @@ FILE * openOutputFile() {
     return fp;
 }
 
-void* applyCommands(char* command){
+void* applyCommands(char* command, uid_t owner){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
@@ -83,7 +82,7 @@ void* applyCommands(char* command){
             case 'c':
                 iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
-                create(fs, arg1, iNumber, 0, permConv(arg2)); //FIXME: 0: owner
+                create(fs, arg1, iNumber, owner, permConv(arg2)); //FIXME: 0: owner
                 break;
             case 'l':
                 mutex_unlock(&commandsLock);
@@ -140,28 +139,31 @@ void inits(){
 }
 
 
-void *newClient(void* socket){
-    int socketfd = (int)socket;
-    printf("socket: %d\n",socketfd);
+void *newClient(void* cli){
+    client *cliente = (client*)cli;
+    printf("socket: %02d\n",cliente->socket);
     
     int n;
 	char line[MAX_INPUT_SIZE];
-    bzero(line, NULL);
-	for (;;) {/* Lê uma linha do socket */
-		n = read(sockfd, line, MAX_INPUT_SIZE);
-		printf("%s", line);
-        if (n == 0)
-			return;
+    int error_code=0;
+    int error_code_size = sizeof(error_code);
+	while(!error_code) {   //FIXME: check if socket still connected
+    	getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
+        if(error_code)
+            break;
+    	bzero(line, NULL);
+		n = read(cliente->socket, line, MAX_INPUT_SIZE);
+		if (n == 0)
+			continue;
 		else if (n < 0){
 			perror("str_echo: read line error");
-            pthread_exit(EXIT_FAILURE);
+			pthread_exit(EXIT_FAILURE);
         }
-		/*Reenvia a linha para o socket. n conta com o \0 da string, caso contrário perdia-se sempre um caracter!*/
-		/*if(write(sockfd,line,n)!=n)
-			perror("str_echo: write error");*/
+		printf("%s\n",line);
+		applyCommands(line, cliente->uid);
 	}
-
-
+    printf("exit: %02d\n",cliente->socket);
+    free(cliente);
     return NULL;
 }
 
@@ -173,6 +175,7 @@ void connections(){
 
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
+    client *cliente;
 
     for(;;){
 		clilen = sizeof(cli_addr);
@@ -180,19 +183,21 @@ void connections(){
 		if(newsockfd < 0)
 			perror("server: accept error");
 
+        cliente=malloc(sizeof(client));
+
 		ucred_len = sizeof(struct ucred);
         if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1)
             return TECNICOFS_ERROR_OTHER;
 
-        // ver os UIDs
-        printf("Credenciais do processo no outro lado da ligação: ");
-        printf("pid=%ld, euid=%ld, egid=%ld\n", (long) ucreds.pid, (long) ucreds.uid, (long) ucreds.gid);
+        cliente->socket=newsockfd;
+        cliente->pid=ucreds.pid;
+        cliente->uid=ucreds.uid;
 
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
         workers[clients]=NULL;  //marca o fim do array
 
-        err = pthread_create(&workers[clients-1], NULL, newClient, (void*)newsockfd);
+        err = pthread_create(&workers[clients-1], NULL, newClient, (void*)cliente);
         if (err){
             perror("Can't create thread");
             exit(EXIT_FAILURE);

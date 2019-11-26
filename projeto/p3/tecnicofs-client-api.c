@@ -22,6 +22,8 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 	msg[strlen(filename)+5]='\0';
 	res = sendMsg(msg);
 	free(msg);
+	sleep(5);
+	printf("%d\n", res);
 	return res;
 }
 
@@ -82,7 +84,7 @@ int tfsUnmount(){
 
 int sendMsg(char* msg){
 	int n;
-	//char recvline[MAX_INPUT_SIZE+1];
+	char recvline[MAX_INPUT_SIZE];
 	
 	/*Envia string para sockfd.
 	Note-se que o \0 não é enviado*/
@@ -92,11 +94,10 @@ int sendMsg(char* msg){
 	/* Tenta ler string de sockfd.
 	Note-se que tem de terminar a string com \0 */
 	
-	/*
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
 	recvline[n]=0;
-	/*Envia a string para stdout*/
-	/*fputs(recvline, stdout);*/
+
+	return atoi(recvline);
 }
