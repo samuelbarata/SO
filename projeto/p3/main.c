@@ -147,14 +147,10 @@ void *newClient(void* cli){
 	char line[MAX_INPUT_SIZE];
 	int error_code=0;
 	unsigned int error_code_size = sizeof(error_code);
-	while(!error_code) {   //FIXME: check if socket still connected
-		getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
-	    if(error_code)
-			break;
-		bzero(line, strlen(line));
-		n = read(cliente->socket, line, MAX_INPUT_SIZE);
+	while(TRUE) {   //FIXME: check if socket still connected
+		n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
 		if (n == 0)
-			continue;
+			break;
 		else if (n < 0){
 			perror("read from socket");
 			free(cliente);
