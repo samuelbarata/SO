@@ -80,17 +80,8 @@ int applyCommands(char* command, uid_t owner){
 
         switch (token) {
             case 'c':
-                //iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
                 return create(fs, arg1, /*iNumber,*/ owner, permConv(arg2)); //FIXME: 0: owner
-                break;
-            case 'l':
-                mutex_unlock(&commandsLock);
-                int searchResult = lookup(fs, arg1);
-                if(!searchResult)
-                    printf("%s not found\n", arg1);
-                else
-                    printf("%s found with inumber %d\n", arg1, searchResult);
                 break;
             case 'd':
                 mutex_unlock(&commandsLock);
@@ -102,6 +93,18 @@ int applyCommands(char* command, uid_t owner){
                 mutex_unlock(&commandsLock);
                 if(iNumber && !newiNumber)
                     return reName(fs, arg1, arg2, iNumber);
+                break;
+            case 'l':
+				return readFromFile(fs, arg1, arg2);
+				break;
+            case 'o':
+                return openFile(fs, arg1, arg2);
+                break;
+            case 'x':
+                return closeFile(fs, arg1);
+                break;
+            case 'w':
+                return writeToFile(fs, arg1, arg2);
                 break;
                 
             default: { /* error */
