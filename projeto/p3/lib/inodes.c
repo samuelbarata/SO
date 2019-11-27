@@ -188,14 +188,16 @@ int inode_set(int inumber, char *fileContents, int len){
     return 0;
 }
 
-permission *permConv(char* perms){  // 1-W 2-R 3-WR
+
+/**
+ * recebe permições XX
+ * devolve array [perm1, perm2]
+ */
+permission *permConv(char* perms){
     int atoiPerms = atoi(perms);
-    int *res = malloc(sizeof(int)*2);
-    if(atoiPerms<10)    // se perm < 10 entao so tem um numero, nao devia de ser erro?
-        res[1]=NONE;
-    else
-        res[1] = atoiPerms%10;
+    permission *res = malloc(sizeof(permission)*2);
     res[0] = atoiPerms/10;
+    res[1] = atoiPerms%10;
     for(int perm=0; perm<2 ;perm++){
         if(res[perm] & 0b11111100){ //permission is not valid
             res[perm] = TECNICOFS_ERROR_OTHER;

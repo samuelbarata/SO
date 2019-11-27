@@ -5,7 +5,6 @@
 #include <string.h>
 #include <assert.h>
 #include "bst.h"
-#include "../globals.h"
 
 void insertDelay(int cycles){
     for(int i=0; i < cycles; i++){}
@@ -25,6 +24,7 @@ node* new_node(char* key, int inumber)
     p->inumber = inumber;
     p->left  = NULL;
     p->right = NULL;
+    p->isOpen = FALSE;
     return p;
 }
 

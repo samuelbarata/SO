@@ -11,7 +11,7 @@ CC   = gcc
 LD   = gcc
 CFLAGS =-Wall -std=gnu99 -I../ -g
 LDFLAGS=-lm -pthread
-TARGETS = tecnicofs-rwlock
+TARGETS = tecnicofs-rwlock client-api-test-create.sh
 
 .PHONY: all clean
 
@@ -36,7 +36,12 @@ fs-rwlock.o: fs.c fs.h lib/bst.h lib/hash.h
 sync-rwlock.o: CFLAGS+=-DRWLOCK
 sync-rwlock.o: sync.c sync.h globals.h
 
-tecnicofs-client-api.o: tecnicofs-client-api.c tecnicofs-client-api.h tecnicofs-api-constants.h
+tecnicofs-client-api.o: tecnicofs-client-api.c tecnicofs-client-api.h tecnicofs-api-constants.h 
+
+client-api-test-create.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c
+client-api-test-delete.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c
+client-api-test-read.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c
+client-api-test-success.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c
 
 main-rwlock.o: CFLAGS+=-DRWLOCK
 main-rwlock.o: main.c fs.h lib/bst.h globals.h lib/timer.h sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h tecnicofs-client-api.h
@@ -56,5 +61,8 @@ cleaner:
 	@rm -f -r output/
 	@clear
 
-run: all
-	./runTests.sh inputs outputs 20 7
+runs: all
+	./tecnicofs-rwlock /tmp/mySocket myout.out 1
+
+runc: all
+	./client-api-test-create.sh /tmp/mySocket

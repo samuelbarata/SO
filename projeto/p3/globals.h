@@ -10,4 +10,11 @@
 #define TRUE 1
 #define MINGUA_CONSTANT 0.0001
 
+#include <sys/types.h>
+typedef struct client{
+	int socket;
+	pid_t pid;
+	uid_t uid;
+} client;
+
 #endif /* CONSTANTS_H */

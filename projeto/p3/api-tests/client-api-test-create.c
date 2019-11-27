@@ -2,7 +2,10 @@
 #include "../tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h> //https://stackoverflow.com/questions/1571340/what-is-the-assert-function
+#include <assert.h>
+
+
+
 
 
 int main(int argc, char** argv) {
@@ -11,9 +14,9 @@ int main(int argc, char** argv) {
         exit(0);
     }
     assert(tfsMount(argv[1]) == 0);
-    printf("Test: create file sucess");
+    printf("Test: create file sucess\n");
     assert(tfsCreate("a", RW, READ) == 0);
-    printf("Test: create file with name that already exists");
+    printf("Test: create file with name that already exists\n");
     assert(tfsCreate("a", RW, READ) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);
     assert(tfsUnmount() == 0);
 

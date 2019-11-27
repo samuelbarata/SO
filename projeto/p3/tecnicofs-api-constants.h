@@ -3,6 +3,7 @@
 #define TECNICOFS_API_CONSTANTS_H
 
 typedef enum permission { NONE, WRITE, READ, RW } permission;
+						//	0	  1		2	 3
 
 /* Client already has an open session with a TecnicoFS server */
 #define TECNICOFS_ERROR_OPEN_SESSION -1

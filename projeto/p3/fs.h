@@ -5,6 +5,7 @@
 #include "lib/bst.h"
 #include "sync.h"
 #include "globals.h"
+#include "tecnicofs-api-constants.h"
 
 typedef struct tecnicofs {
     node** bstRoot;
@@ -17,9 +18,9 @@ extern int numberBuckets;
 int obtainNewInumber(tecnicofs* fs);
 tecnicofs* new_tecnicofs();
 void free_tecnicofs(tecnicofs* fs);
-void create(tecnicofs *fs, char *name, int inumber,uid_t owner, permission *perms);
-void delete(tecnicofs *fs, char *name);
-void reName(tecnicofs* fs, char *name, char *newName, int inumber);
+int create(tecnicofs *fs, char *name,uid_t owner, permission *perms);
+int delete(tecnicofs *fs, char *name,uid_t user);
+int reName(tecnicofs* fs, char *name, char *newName, int inumber);
 int lookup(tecnicofs *fs, char *name);
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
 

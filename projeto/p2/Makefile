@@ -58,7 +58,6 @@ main-rwlock.o: CFLAGS+=-DRWLOCK
 main-rwlock.o: main.c fs.h lib/bst.h globals.h lib/timer.h sync.h lib/hash.h
 tecnicofs-rwlock: lib/bst-rwlock.o fs-rwlock.o sync-rwlock.o main-rwlock.o lib/hash.o
 
-
 %.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -75,3 +74,14 @@ cleaner:
 
 run: all
 	./runTests.sh inputs outputs 20 7
+
+generator: SHELL:=/bin/bash
+generator: tester.py check.py all
+	@rm -rf myinp 2> /dev/null
+	@mkdir myinp
+	@echo Running test...
+	@python3 tester.py 20
+	@./tecnicofs-rwlock myinp/test6.txt myinp/test6.out 25 40 > myinp/test6.stdout
+	@grep "^Tecnico" myinp/test6.stdout
+	@python3 check.py myinp/temp
+	@#rm -rf myinp
