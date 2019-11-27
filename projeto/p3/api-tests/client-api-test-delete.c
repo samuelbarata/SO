@@ -13,13 +13,13 @@ int main(int argc, char** argv) {
     }
     int fd = -1;
     assert(tfsMount(argv[1]) == 0);
-    assert(tfsCreate("a", RW, READ) == 0);
+    assert(tfsCreate("b", RW, READ) == 0);
 
     printf("Test: delete file success\n");
-    assert(tfsDelete("a") == 0);
+    assert(tfsDelete("b") == 0);
     
     printf("Test: delete file that does not exist\n");
-    assert(tfsDelete("b") == TECNICOFS_ERROR_FILE_NOT_FOUND);
+    assert(tfsDelete("c") == TECNICOFS_ERROR_FILE_NOT_FOUND);
     assert(tfsUnmount() == 0);
 
     printf("SUCCESS\n\n");

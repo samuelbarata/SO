@@ -14,12 +14,12 @@ int main(int argc, char** argv) {
 
     assert(tfsMount(argv[1]) == 0);
 
-    assert(tfsCreate("abc", RW, READ) == 0 );
+    assert(tfsCreate("bcd", RW, READ) == 0 );
 
-    assert(tfsRename("abc", "bcd") == 0);
+    assert(tfsRename("bcd", "cde") == 0);
 
     int fd = -1;
-    assert((fd = tfsOpen("bcd", RW)) == 0);
+    assert((fd = tfsOpen("cde", RW)) == 0);
 
     assert(tfsWrite(fd, "hmm", 3) == 0);
 
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
     assert(tfsClose(fd) == 0);
 
-    assert(tfsDelete("bcd") == 0);
+    assert(tfsDelete("cde") == 0);
 
     assert(tfsUnmount() == 0);
 
