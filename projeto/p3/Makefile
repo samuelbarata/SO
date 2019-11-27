@@ -11,7 +11,7 @@ CC   = gcc
 LD   = gcc
 CFLAGS =-Wall -std=gnu99 -I../ -g
 LDFLAGS=-lm -pthread
-TARGETS = tecnicofs-rwlock client-api-test-create.sh
+TARGETS = tecnicofs-rwlock client-api-test-create.sh client-api-test-delete.sh client-api-test-read.sh client-api-test-success.sh
 
 .PHONY: all clean
 
@@ -64,5 +64,5 @@ cleaner:
 runs: all
 	./tecnicofs-rwlock /tmp/mySocket myout.out 1
 
-runc: all
+runc: client-api-test-create.sh client-api-test-delete.sh client-api-test-read.sh client-api-test-success.sh
 	./client-api-test-create.sh /tmp/mySocket

@@ -46,5 +46,10 @@ int main(int argc, char** argv) {
     assert(tfsDelete("abc") == 0);
     assert(tfsUnmount() == 0);
 
+    printf("SUCCESS\n\n");
+    char command[100]="./client-api-test-success.sh ";
+    strcat(command, argv[1]);
+    system(command);
+
     return 0;
 }

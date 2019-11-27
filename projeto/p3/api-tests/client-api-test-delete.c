@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 
 int main(int argc, char** argv) {
@@ -20,5 +21,11 @@ int main(int argc, char** argv) {
     printf("Test: delete file that does not exist\n");
     assert(tfsDelete("b") == TECNICOFS_ERROR_FILE_NOT_FOUND);
     assert(tfsUnmount() == 0);
+
+    printf("SUCCESS\n\n");
+    char command[100]="./client-api-test-read.sh ";
+    strcat(command, argv[1]);
+    system(command);
+
     return 0;
 }

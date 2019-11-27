@@ -33,5 +33,7 @@ int main(int argc, char** argv) {
 
     assert(tfsUnmount() == 0);
 
+    printf("\nCONGRATS\n\n")
+
     return 0;
 }
