@@ -21,17 +21,39 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 	msg[strlen(filename)+4]=othersPermissions + '0';
 	msg[strlen(filename)+5]='\0';
 	res = sendMsg(msg);
+	printf("\ncreate: %s, %d\n", msg, res);
 	free(msg);
-	printf("%d\n", res);
 	return res;
 }
 
 int tfsDelete(char *filename){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(strlen(filename)+3));
+	msg[0] = 'd';
+	msg[1] = ' ';
+	strcat(msg, filename);
+	msg[strlen(filename)+2]='\0';
+	res = sendMsg(msg);
+	printf("\ndelete: %s, %d\n",msg, res);
+	free(msg);
+	return res;
 }
 
 int tfsRename(char *filenameOld, char *filenameNew){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4));
+	msg[0] = 'r';
+	msg[1] = ' ';
+	strcat(msg, filenameOld);
+	msg[strlen(filenameOld)+2]=' ';
+	strcat(msg, filenameNew);
+	msg[strlen(filenameOld)+strlen(filenameNew)+3]='\0';
+	res = sendMsg(msg);
+	printf("rename: %s, %d\n",msg, res);
+	free(msg);
+	return res;
 }
 
 int tfsOpen(char *filename, permission mode){
@@ -85,18 +107,15 @@ int sendMsg(char* msg){
 	int n;
 	char recvline[MAX_INPUT_SIZE];
 	
-	/*Envia string para sockfd.
-	Note-se que o \0 não é enviado*/
+	/*Envia string para sockfd; \0 não é enviado*/
 	n=strlen(msg);
 	if (write(sockfd, msg, n) != n)
 		return TECNICOFS_ERROR_OTHER;
-	/* Tenta ler string de sockfd.
-	Note-se que tem de terminar a string com \0 */
-	
+
+	/* Tenta ler string de sockfd.*/
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
 	recvline[n]='\0';
-
 	return atoi(recvline);
 }

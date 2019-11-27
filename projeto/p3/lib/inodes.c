@@ -188,7 +188,12 @@ int inode_set(int inumber, char *fileContents, int len){
     return 0;
 }
 
-permission *permConv(char* perms){  // 1-W 2-R 3-WR
+
+/**
+ * recebe permições XX
+ * devolve array [perm1, perm2]
+ */
+permission *permConv(char* perms){
     int atoiPerms = atoi(perms);
     permission *res = malloc(sizeof(permission)*2);
     res[0] = atoiPerms/10;

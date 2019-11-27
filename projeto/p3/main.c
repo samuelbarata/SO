@@ -80,9 +80,9 @@ int applyCommands(char* command, uid_t owner){
 
         switch (token) {
             case 'c':
-                iNumber = obtainNewInumber(fs);
+                //iNumber = obtainNewInumber(fs);
                 mutex_unlock(&commandsLock);
-                create(fs, arg1, iNumber, owner, permConv(arg2)); //FIXME: 0: owner
+                return create(fs, arg1, /*iNumber,*/ owner, permConv(arg2)); //FIXME: 0: owner
                 break;
             case 'l':
                 mutex_unlock(&commandsLock);
@@ -94,14 +94,14 @@ int applyCommands(char* command, uid_t owner){
                 break;
             case 'd':
                 mutex_unlock(&commandsLock);
-                delete(fs, arg1);
+                return delete(fs, arg1, owner);
                 break;
             case 'r':
             	iNumber = lookup(fs, arg1);         //inumber do ficheiro atual
                 newiNumber = lookup(fs, arg2);      //ficheiro novo existe?
                 mutex_unlock(&commandsLock);
                 if(iNumber && !newiNumber)
-                    reName(fs, arg1, arg2, iNumber);
+                    return reName(fs, arg1, arg2, iNumber);
                 break;
                 
             default: { /* error */

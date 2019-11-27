@@ -45,26 +45,73 @@ void free_tecnicofs(tecnicofs* fs){
 	free(fs);	
 }
 
-void create(tecnicofs* fs, char *name, int inumber,uid_t owner ,permission *perms){
-	if(inode_create(owner, perms[0], perms[1])<0){
-		free(perms);
-		return;
-	}
-	free(perms);
+int create(tecnicofs* fs, char *name,uid_t owner ,permission *perms){
+	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
-	sync_wrlock(&(fs->bstLock[index]));
+	int error_code = 0;
+	sync_wrlock(&(fs->bstLock[index]));		//TODO: read lock no search? inumbers seguidos?
+	node* searchNode = search(fs->bstRoot[index], name);
+	
+	//verificacao erros
+	if(searchNode)
+		error_code = TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
+	else if(perms[0]==TECNICOFS_ERROR_OTHER || perms[1] == TECNICOFS_ERROR_OTHER)		
+		error_code = TECNICOFS_ERROR_OTHER;
+
+	if(error_code){
+		sync_unlock(&(fs->bstLock[index]));
+		free(perms);
+		return error_code;
+	}
+
+	//criar inode obter inumber
+	int inumber = inode_create(owner, perms[0], perms[1]);
+	if(inumber<0)
+		return TECNICOFS_ERROR_OTHER;
+	
+	//insert bst
 	fs->bstRoot[index] = insert(fs->bstRoot[index], name, inumber);
 	sync_unlock(&(fs->bstLock[index]));
+	
+	free(perms);
+	return 0;
 }
 
-void delete(tecnicofs* fs, char *name){
+int delete(tecnicofs* fs, char *name, uid_t user){
+	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
-	sync_wrlock(&(fs->bstLock[index]));
+	int error_code = 0, aux;
+	uid_t *owner;
+	permission *ownerPerm,*othersPerm;
+	char* fileContents;
+	sync_wrlock(&(fs->bstLock[index]));		//TODO: read lock no search? inumbers seguidos?
+	node* searchNode = search(fs->bstRoot[index], name);
+	
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	else
+		aux = inode_get(searchNode->inumber,owner,ownerPerm,othersPerm,fileContents,0);
+
+	if(aux<0)
+		error_code = TECNICOFS_ERROR_OTHER;
+	
+	else if(searchNode->isOpen)
+		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+	else if(user==owner && !(*ownerPerm & 0b00000001) || !(*othersPerm & 0b00000001))	//0b00000001 = WRITE
+		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
+
+	if(error_code){
+		sync_unlock(&(fs->bstLock[index]));
+		return error_code;
+	}
+
+	inode_delete(searchNode->inumber);
 	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
 	sync_unlock(&(fs->bstLock[index]));
+	return error_code;
 }
 
-void reName(tecnicofs* fs, char *name, char *newName, int inumber){
+int reName(tecnicofs* fs, char *name, char *newName, int inumber){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
 
@@ -87,6 +134,7 @@ void reName(tecnicofs* fs, char *name, char *newName, int inumber){
 	sync_unlock(&(fs->bstLock[index1]));
 	if(index0!=index1)
 		sync_unlock(&(fs->bstLock[index0]));
+	return 0;
 }
 
 int lookup(tecnicofs* fs, char *name){
