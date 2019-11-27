@@ -8,6 +8,7 @@
 #include "globals.h"
 
 int sockfd=-1;
+int sendMsg(char* msg);	//return the error code from the server
 
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions){
 	char* msg;

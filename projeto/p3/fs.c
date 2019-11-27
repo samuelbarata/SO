@@ -81,9 +81,9 @@ int delete(tecnicofs* fs, char *name, uid_t user){
 	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
 	int error_code = 0, aux;
-	uid_t *owner;
-	permission *ownerPerm,*othersPerm;
-	char* fileContents;
+	uid_t *owner=NULL;
+	permission *ownerPerm=NULL,*othersPerm=NULL;
+	char* fileContents=NULL;
 	sync_wrlock(&(fs->bstLock[index]));		//TODO: read lock no search? inumbers seguidos?
 	node* searchNode = search(fs->bstRoot[index], name);
 	
@@ -97,7 +97,7 @@ int delete(tecnicofs* fs, char *name, uid_t user){
 	
 	else if(searchNode->isOpen)
 		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
-	else if(user==owner && !(*ownerPerm & 0b00000001) || !(*othersPerm & 0b00000001))	//0b00000001 = WRITE
+	else if((user==*owner && !(*ownerPerm & 0b00000001)) || !(*othersPerm & 0b00000001))	//0b00000001 = WRITE
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(error_code){

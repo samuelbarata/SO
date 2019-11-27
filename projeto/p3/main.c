@@ -145,7 +145,7 @@ void *newClient(void* cli){
 	sigaddset(&set, SIGINT);
 	if(pthread_sigmask(SIG_SETMASK, &set, NULL)){
 		perror("sig_mask: Failure");
-		pthread_exit(EXIT_FAILURE);
+		pthread_exit(NULL);
 	}
 	client *cliente = (client*)cli;
 	printf("socket: %02d\n",cliente->socket);
@@ -153,18 +153,19 @@ void *newClient(void* cli){
 	int n, res;
 	char line[MAX_INPUT_SIZE];
 	int error_code=0;
-	int error_code_size = sizeof(error_code);
+	unsigned int error_code_size = sizeof(error_code);
 	while(!error_code) {   //FIXME: check if socket still connected
 		getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
 	    if(error_code)
-	        break;
-		bzero(line, NULL);
+			break;
+		//bzero(line, NULL);
 		n = read(cliente->socket, line, MAX_INPUT_SIZE);
 		if (n == 0)
 			continue;
 		else if (n < 0){
 			perror("read from socket");
-			pthread_exit(EXIT_FAILURE);
+			free(cliente);
+			pthread_exit(NULL);
 		}
 		printf("%s\n",line);
 		res = applyCommands(line, cliente->uid);
@@ -180,7 +181,7 @@ void *newClient(void* cli){
 
 void connections(){
     int clients=0, err;
-    int ucred_len;
+    unsigned int ucred_len;
 
     struct ucred ucreds;    
 
@@ -190,23 +191,25 @@ void connections(){
 
     for(;;){
 		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr, &clilen);
+		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
 		if(newsockfd < 0)
 			perror("server: accept error");
 
         cliente=malloc(sizeof(client));
 
 		ucred_len = sizeof(struct ucred);
-        if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1)
-            return TECNICOFS_ERROR_OTHER;
-
+        if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
+			perror("cant get client uid");
+			free(cliente);
+			continue;
+		}
         cliente->socket=newsockfd;
         cliente->pid=ucreds.pid;
         cliente->uid=ucreds.uid;
 
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);
-        workers[clients]=NULL;  //marca o fim do array
+        workers[clients]='\0';  //marca o fim do array
 
         err = pthread_create(&workers[clients-1], NULL, newClient, (void*)cliente);
         if (err){
@@ -220,7 +223,7 @@ void exitServer(){
     int join;
     pthread_t *pointer; //percorre os workers
     close(sockfd);      //não deixa receber mais ligações
-    for(pointer=workers; pointer!=NULL; pointer++) {       //espera que threads acabem os trabalhos dos clientes
+    for(pointer=workers; pointer!='\0'; pointer++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(*pointer, NULL);
         if(join){
             perror("Can't join thread");
