@@ -8,11 +8,6 @@
 #include "lib/inodes.h"
 
 
-int obtainNewInumber(tecnicofs* fs) {//como os inumbers são independentes do bucket gravados em fs[0]
-	int newInumber = ++(fs->nextINumber);
-	return newInumber;
-}
-
 tecnicofs* new_tecnicofs(){
 	tecnicofs*fs = malloc(sizeof(tecnicofs));
 	if (!fs) {
@@ -81,23 +76,23 @@ int delete(tecnicofs* fs, char *name, uid_t user){
 	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
 	int error_code = 0, aux;
-	uid_t *owner=NULL;
-	permission *ownerPerm=NULL,*othersPerm=NULL;
+	uid_t owner;
+	permission ownerPerm,othersPerm;
 	char* fileContents=NULL;
-	sync_wrlock(&(fs->bstLock[index]));		//TODO: read lock no search? inumbers seguidos?
+	sync_wrlock(&(fs->bstLock[index]));
 	node* searchNode = search(fs->bstRoot[index], name);
 	
 	if(!searchNode)
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
 	else
-		aux = inode_get(searchNode->inumber,owner,ownerPerm,othersPerm,fileContents,0);
+		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
 
-	if(aux<0)
+	if(error_code);
+	else if(aux<0)
 		error_code = TECNICOFS_ERROR_OTHER;
-	
 	else if(searchNode->isOpen)
 		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
-	else if((user==*owner && !(*ownerPerm & 0b00000001)) || !(*othersPerm & 0b00000001))	//0b00000001 = WRITE
+	else if((user==owner && !(ownerPerm & 0b00000001)) && !(othersPerm & 0b00000001))	//0b00000001 = WRITE
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(error_code){

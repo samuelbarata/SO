@@ -15,7 +15,6 @@ typedef struct tecnicofs {
 
 extern int numberBuckets;
 
-int obtainNewInumber(tecnicofs* fs);
 tecnicofs* new_tecnicofs();
 void free_tecnicofs(tecnicofs* fs);
 int create(tecnicofs *fs, char *name,uid_t owner, permission *perms);
