@@ -9,7 +9,6 @@
 
 typedef struct tecnicofs {
     node** bstRoot;
-    int nextINumber;
     syncMech* bstLock;
 } tecnicofs;
 
@@ -22,5 +21,9 @@ int delete(tecnicofs *fs, char *name,uid_t user);
 int reName(tecnicofs* fs, char *name, char *newName, int inumber);
 int lookup(tecnicofs *fs, char *name);
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
+int openFile(tecnicofs *fs, char* filename,char* mode);
+int closeFile(tecnicofs *fs, char* filename);
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer);
+int readFromFile(tecnicofs *fs, char* filename, char* len);
 
 #endif /* FS_H */
