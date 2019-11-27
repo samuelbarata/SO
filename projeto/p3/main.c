@@ -158,7 +158,7 @@ void *newClient(void* cli){
 		getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
 	    if(error_code)
 			break;
-		//bzero(line, NULL);
+		bzero(line, strlen(line));
 		n = read(cliente->socket, line, MAX_INPUT_SIZE);
 		if (n == 0)
 			continue;
