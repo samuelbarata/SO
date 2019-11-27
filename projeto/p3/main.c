@@ -71,28 +71,20 @@ int applyCommands(char* command, uid_t owner){
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
 
-        if (command == NULL){
-            mutex_unlock(&commandsLock);
+        if (command == NULL)
             return 0;
-        }
         
         sscanf(command, "%c %s %s", &token, arg1, arg2);
 
         switch (token) {
             case 'c':
-                mutex_unlock(&commandsLock);
-                return create(fs, arg1, /*iNumber,*/ owner, permConv(arg2)); //FIXME: 0: owner
-                break;
+                return create(fs, arg1, owner, permConv(arg2)); //FIXME: 0: owner
+				break;
             case 'd':
-                mutex_unlock(&commandsLock);
                 return delete(fs, arg1, owner);
                 break;
             case 'r':
-            	iNumber = lookup(fs, arg1);         //inumber do ficheiro atual
-                newiNumber = lookup(fs, arg2);      //ficheiro novo existe?
-                mutex_unlock(&commandsLock);
-                if(iNumber && !newiNumber)
-                    return reName(fs, arg1, arg2, iNumber);
+                return reName(fs, arg1, arg2, iNumber);
                 break;
             case 'l':
 				return readFromFile(fs, arg1, arg2);
@@ -108,7 +100,6 @@ int applyCommands(char* command, uid_t owner){
                 break;
                 
             default: { /* error */
-                mutex_unlock(&commandsLock);
                 fprintf(stderr, "Error: could not apply command %c\n", token);  //TODO: devolver erro comando not valid em vez de crashar server
                 exit(EXIT_FAILURE);
             }
@@ -120,7 +111,6 @@ void inits(){
     struct sockaddr_un serv_addr;
     int servlen;
 
-    mutex_init(&commandsLock);
     srand(time(NULL));
 
     /* Cria socket stream */
@@ -232,7 +222,6 @@ void exitServer(){
             perror("Can't join thread");
         }
     }
-    mutex_destroy(&commandsLock);   
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);
