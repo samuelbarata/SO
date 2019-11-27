@@ -14,7 +14,6 @@ tecnicofs* new_tecnicofs(){
 		perror("failed to allocate tecnicofs");
 		exit(EXIT_FAILURE);
 	}
-	fs->nextINumber = 0;
 	fs->bstRoot = malloc(sizeof(node*)*numberBuckets);
 	fs->bstLock = malloc(sizeof(syncMech)*numberBuckets);
 	if (!fs->bstRoot || !fs->bstLock){
@@ -144,6 +143,12 @@ int lookup(tecnicofs* fs, char *name){
 	sync_unlock(&(fs->bstLock[index]));
 	return inumber;
 }
+
+int openFile(tecnicofs *fs, char* filename,char* mode){return 0;}
+int closeFile(tecnicofs *fs, char* filename){return 0;}
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer){return 0;}
+int readFromFile(tecnicofs *fs, char* filename, char* len){return 0;}
+
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
 	for (int index = 0; index < numberBuckets; index++){
