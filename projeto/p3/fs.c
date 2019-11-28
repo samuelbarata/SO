@@ -173,8 +173,9 @@ int openFile(tecnicofs *fs, char* filename,char* mode){
 	}
 
 	searchNode -> nUsers++;
-	searchNode -> users = realloc(searchNode -> users, sizeof(uid_t) * searchNode -> nUsers)
-	cliente -> 
+	searchNode -> users = realloc(searchNode -> users, sizeof(uid_t) * searchNode -> nUsers);
+	searchNode -> users[searchNode->nUsers]=cliente->uid;
+	searchNode -> mode
 	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
 
