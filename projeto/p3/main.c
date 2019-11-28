@@ -71,42 +71,42 @@ FILE * openOutputFile() {
 }
 
 int applyCommands(char* command, client* user){
-        char token;
-        char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
+    char token;
+    char arg1[MAX_INPUT_SIZE]="", arg2[MAX_INPUT_SIZE]="";
 
-        if (command == NULL)
-            return 0;
-        
-        sscanf(command, "%c %s %s", &token, arg1, arg2);
+    if (command == NULL)
+        return 0;
 
-        switch (token) {
-            case 'c':
-                return create(fs, arg1, user, permConv(arg2)); //FIXME: 0: user
-				break;
-            case 'd':
-                return delete(fs, arg1, user);
-                break;
-            case 'r':
-                return reName(fs, arg1, arg2, user); //inumber unittialized
-                break;
-            case 'l':
-				return readFromFile(fs, arg1, arg2, user);
-				break;
-            case 'o':
-                return openFile(fs, arg1, arg2, user);
-                break;
-            case 'x':
-                return closeFile(fs, arg1, user);
-                break;
-            case 'w':
-                return writeToFile(fs, arg1, arg2, user);
-                break;
-                
-            default: { /* error */
-                fprintf(stderr, "Error: could not apply command %c\n", token);  //TODO: devolver erro comando not valid em vez de crashar server
-                exit(EXIT_FAILURE);
-            }
+    sscanf(command, "%c %s %s", &token, arg1, arg2);
+
+    switch (token) {
+        case 'c':
+            return create(fs, arg1, user, permConv(arg2));
+            break;
+        case 'd':
+            return delete(fs, arg1, user);
+            break;
+        case 'r':
+            return reName(fs, arg1, arg2, user);
+            break;
+        case 'l':
+            return readFromFile(fs, arg1, arg2, user);
+            break;
+        case 'o':
+            return openFile(fs, arg1, arg2, user);
+            break;
+        case 'x':
+            return closeFile(fs, arg1, user);
+            break;
+        case 'w':
+            return writeToFile(fs, arg1, arg2, user);
+            break;
+            
+        default: { /* error */
+            fprintf(stderr, "Error: could not apply command %c\n", token);
+            return TECNICOFS_ERROR_OTHER;
         }
+    }
     return 0;
 }
 
@@ -151,12 +151,13 @@ void *newClient(void* cli){
     
 	int n, res;
 	char line[MAX_INPUT_SIZE];
-	//int error_code=0;
-	//unsigned int error_code_size = sizeof(error_code);
-	while(TRUE) {   //FIXME: check if socket still connected
-		n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
-		if (n == 0)
-			break;
+	/*
+    */
+	while(TRUE){
+        bzero(line, MAX_INPUT_SIZE);
+        n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
+        if (n == 0)
+            break;
 		else if (n < 0){
 			perror("read from socket");
 			free(cliente);

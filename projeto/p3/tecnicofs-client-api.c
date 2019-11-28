@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -66,11 +67,36 @@ int tfsClose(int fd){
 }
 
 int tfsRead(int fd, char *buffer, int len){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res, cmp;
+	msg = malloc(sizeof(char)*(3));
+	res = dprintf(sockfd, "%c %d", 'd',fd);
+	if(res<0)
+		return TECNICOFS_ERROR_OTHER;
+	free(msg);
+	msg = malloc(MAX_INPUT_SIZE+1);
+
+	cmp = read(sockfd, msg, MAX_INPUT_SIZE);
+	if (cmp<0)
+		return TECNICOFS_ERROR_OTHER;
+	msg[cmp]='\0';
+
+	strncpy(buffer,msg,len);
+
+	printf("\read: %s, %d\n",buffer, res);
+	free(msg);
+	return res;
 }
 
 int tfsWrite(int fd, char *buffer, int len){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(6));
+	sprintf(msg, "%c %d %d", 'w', fd, buffer);
+	res = sendMsg(msg);
+	printf("\nwrite: %s, %d\n", msg,res);
+	free(msg);
+	return res;
 }
 
 int tfsMount(char * address){
