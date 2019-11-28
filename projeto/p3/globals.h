@@ -18,6 +18,7 @@
 #define OPEN_USER_WRITE		0b00001000
 #define	OPEN_OTHER_READ		0b00010000
 #define OPEN_OTHER_WRITE	0b00100000
+#define ESPACO_AVAILABLE	0b01000000
 
 #include <sys/types.h>
 #include <stdlib.h>

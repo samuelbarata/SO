@@ -89,7 +89,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 		error_code = TECNICOFS_ERROR_OTHER;
 	}
 	if(!error_code)
-		extendedPermissions = checkUserPerms(cliente , searchNode);
+		extendedPermissions = checkUserPerms(user , searchNode);
 	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
@@ -146,76 +146,44 @@ int lookup(tecnicofs* fs, char *name){
 	return inumber;
 }
 
-int openFile(tecnicofs *fs, char* filename,char* mode, client user){
+int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	int index = hash(filename, numberBuckets);
-	int error_code = 0, aux;
-	uid_t owner;
-	permission ownerPerm,othersPerm;
-	char* fileContents=NULL;
+	int error_code = 0;
+	int extendedPermissions;
 	sync_wrlock(&(fs->bstLock[index]));
 	node* searchNode = search(fs->bstRoot[index], filename);
 
-	//Verificar se ficheiro existe
 	if(!searchNode)
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-	else
-		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
 
-	if(error_code);
-	else if(aux<0)
-		error_code = TECNICOFS_ERROR_OTHER;
-	else if(searchNode->isOpen)
-		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+	if(!error_code)
+		extendedPermissions = checkUserPerms(user , searchNode);
 
-	if (mode & 0b00000010){ // read
-		if((user == owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))
-			return TECNICOFS_ERROR_PERMISSION_DENIED
+	int mode = atoi(modeIn);
+	if(modeIn != 1 && modeIn != 2 && modeIn != 3 && modeIn != 0)
+		error_code=TECNICOFS_ERROR_INVALID_MODE;
+
+	if(!error_code && !(extendedPermissions&ESPACO_AVAILABLE))
+		error_code = TECNICOFS_ERROR_MAXED_OPEN_FILES;
 		
-	}
-	else if((user == owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))	//0b00000001 = WRITE
-		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
-
-	if(error_code){
-		sync_unlock(&(fs->bstLock[index]));
-		return error_code;
-	}
-
-	searchNode -> nUsers++;
-	searchNode -> users = realloc(searchNode -> users, sizeof(uid_t) * searchNode -> nUsers)
-
-	for (i = 0; i < 5, i++){
-		if (user -> abertos[i] == searchNode -> inumber){
-			return TECNICOFS_ERROR_FILE_IS_OPEN;
+	if(!error_code){
+		switch(mode){
+			case READ:
+				if(extendedPermissions & USER_CAN_READ && !(extendedPermissions & OPEN_OTHER_WRITE))
+					;/*ABRIR LEITURA*/
+				break;
+			case WRITE:
+				if(extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ))
+					;/*ABRIR ESCREVER*/
+				break;
+			case RW:
+				if(extendedPermissions & USER_CAN_READ && extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ))
+					;/*ABRIR LER ESCREVER*/
+				break;
 		}
 	}
-
-	if ()
-
-	}
-	if (i == 5 && user -> abertos[i] != -1){
-		return TECNICOFS_ERROR_MAXED_OPEN_FILES;
-	}
-
-
-	user -> abertos[i] = searchNode -> inumber;
-	user -> mode[i] = atoi(mode);
-
-	for (i = 0; i < 5, i++){
-		if (user -> abertos[i] == -1){
-		break;
-	}
-
-
-
-
-
-
-
-
-
 	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
-
 }
 
 
@@ -241,6 +209,7 @@ void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
  * file open for reading by user	0b00001000
  * file open for writing by other	0b00010000
  * file open for reading by other	0b00100000
+ * space to open more files			0b01000000
  */
 int checkUserPerms(client* cliente , node* ficheiro){
 	uid_t self = cliente->uid;
@@ -265,25 +234,30 @@ int checkUserPerms(client* cliente , node* ficheiro){
 		if(othersPerm&USER_CAN_WRITE)
 			res |= USER_CAN_WRITE;
 	}
-
+	for(int i = 0;i<USER_ABERTOS;i++){
+		if(cliente->abertos[i] == -1){
+			res|=ESPACO_AVAILABLE;
+			break;
+		}
+	}
 	for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
 		for(int k = 0;k<USER_ABERTOS;k++){
-			if(clientes[i]->abertos[k]==ficheiro->inumber){
-				switch(clientes[i]->mode[k]){
+			if(clients[i]->abertos[k]==ficheiro->inumber){
+				switch(clients[i]->mode[k]){
 					case WRITE:
-						if(self == clientes[i]->uid)
+						if(self == clients[i]->uid)
 							res|=OPEN_USER_WRITE;
 						else
 							res|=OPEN_OTHER_WRITE;
 						break;
 					case READ:
-						if(self == clientes[i]->uid)
+						if(self == clients[i]->uid)
 							res|=OPEN_USER_READ;
 						else
 							res|=OPEN_OTHER_READ;
 						break;
 					case RW:
-						if(self == clientes[i]->uid){
+						if(self == clients[i]->uid){
 							res|=OPEN_USER_READ;
 							res|=OPEN_USER_WRITE;
 						}
