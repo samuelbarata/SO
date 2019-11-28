@@ -169,7 +169,7 @@ void *newClient(void* cli){
 }
 
 void connections(){
-    int clients=0, err;
+    int nClients=0, err;
     unsigned int ucred_len;
 
     struct ucred ucreds;    
@@ -177,6 +177,9 @@ void connections(){
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
     client *cliente;
+
+	workers = malloc(workers,sizeof(pthread_t*)*MAX_CLIENTS);
+    clients = malloc(clients,sizeof(client*)*MAX_CLIENTS);
 
     for(;;){
 		clilen = sizeof(cli_addr);
@@ -193,20 +196,23 @@ void connections(){
 			continue;
 		}
         cliente->socket=newsockfd;
-        cliente->pid=ucreds.pid;
         cliente->uid=ucreds.uid;
 
 
         for(int i = 0; i < USER_ABERTOS; i++){
-            client -> abertos[i] = -1;
-            client -> mode[i] = -1;
+            cliente-> abertos[i] = -1;
+            cliente-> mode[i] = -1;
         }
 
-        clients++;
-        workers = realloc(workers,sizeof(pthread_t*)*clients+1);
-        workers[clients]='\0';  //marca o fim do array
+        nClients++;
+        workers = realloc(workers,sizeof(pthread_t*)*nClients+1);
+        clients = realloc(clients,sizeof(client*)*nClients+1);
 
-        err = pthread_create(&workers[clients-1], NULL, newClient, (void*)cliente);
+        workers[nClients]='\0';	//marca o fim do array
+		clients[nClients-1]=cliente;
+		clients[nClients]=NULL;	//marca o fim do array
+
+        err = pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
         if (err){
             perror("Can't create thread");
             exit(EXIT_FAILURE);

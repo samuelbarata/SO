@@ -39,11 +39,11 @@ void free_tecnicofs(tecnicofs* fs){
 	free(fs);	
 }
 
-int create(tecnicofs* fs, char *name,uid_t owner ,permission *perms){
+int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
 	int error_code = 0;
-	sync_wrlock(&(fs->bstLock[index]));		//TODO: read lock no search? inumbers seguidos?
+	sync_wrlock(&(fs->bstLock[index]));
 	node* searchNode = search(fs->bstRoot[index], name);
 	
 	//verificacao erros
@@ -59,7 +59,7 @@ int create(tecnicofs* fs, char *name,uid_t owner ,permission *perms){
 	}
 
 	//criar inode obter inumber
-	int inumber = inode_create(owner, perms[0], perms[1]);
+	int inumber = inode_create(user->uid, perms[0], perms[1]);
 	if(inumber<0)
 		return TECNICOFS_ERROR_OTHER;
 	
@@ -71,28 +71,30 @@ int create(tecnicofs* fs, char *name,uid_t owner ,permission *perms){
 	return 0;
 }
 
-int delete(tecnicofs* fs, char *name, uid_t user){
+int delete(tecnicofs* fs, char *name, client *user){
 	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
 	int error_code = 0, aux;
 	uid_t owner;
 	permission ownerPerm,othersPerm;
+	int extendedPermissions;
 	char* fileContents=NULL;
 	sync_wrlock(&(fs->bstLock[index]));
-	node* searchNode = search(fs->bstRoot[index], name);
 	
+	node* searchNode = search(fs->bstRoot[index], name);
 	if(!searchNode)
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-	else
-		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
-
-	if(error_code);
-	else if(aux<0)
+	
+	if(inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0)<0){
 		error_code = TECNICOFS_ERROR_OTHER;
-	else if(searchNode->isOpen)
-		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
-	else if((user==owner && !(ownerPerm & 0b00000001)) && !(othersPerm & 0b00000001))	//0b00000001 = WRITE
+	}
+	if(!error_code)
+		extendedPermissions = checkUserPerms(cliente , searchNode);
+	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
+
+	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_READ ) && !error_code)
+		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
 
 	if(error_code){
 		sync_unlock(&(fs->bstLock[index]));
@@ -145,13 +147,13 @@ int lookup(tecnicofs* fs, char *name){
 }
 
 int openFile(tecnicofs *fs, char* filename,char* mode, client user){
-	int index = hash(name, numberBuckets);
+	int index = hash(filename, numberBuckets);
 	int error_code = 0, aux;
 	uid_t owner;
 	permission ownerPerm,othersPerm;
 	char* fileContents=NULL;
 	sync_wrlock(&(fs->bstLock[index]));
-	node* searchNode = search(fs->bstRoot[index], name);
+	node* searchNode = search(fs->bstRoot[index], filename);
 
 	//Verificar se ficheiro existe
 	if(!searchNode)
@@ -227,4 +229,73 @@ void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
 	for (int index = 0; index < numberBuckets; index++){
 		print_tree(fp, fs->bstRoot[index]);
 	}
+}
+
+/**
+ * HOW TO USE :
+ * checkUserPerms(cliente, ficheiro[node]) & CENA_A_TESTAR
+ * 
+ * user can write					0b00000001
+ * user can read					0b00000010
+ * file open for writtint by user	0b00000100
+ * file open for reading by user	0b00001000
+ * file open for writing by other	0b00010000
+ * file open for reading by other	0b00100000
+ */
+int checkUserPerms(client* cliente , node* ficheiro){
+	uid_t self = cliente->uid;
+	uid_t owner;
+	permission ownerPerm, othersPerm;
+	char* fileContents=NULL;
+	int inumber = ficheiro->inumber;
+	int res=0b00000000, aux = 0b00000000;
+
+	aux = inode_get(ficheiro->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
+	if(aux<0)
+		return TECNICOFS_ERROR_OTHER;
+	if(cliente->uid==owner){		//user is owner
+		if(ownerPerm&USER_CAN_READ)
+			res |= USER_CAN_READ;
+		if(ownerPerm&USER_CAN_WRITE)
+			res |= USER_CAN_WRITE;
+	}
+	else{							//user isn't owner
+		if(othersPerm&USER_CAN_READ)
+			res |= USER_CAN_READ;
+		if(othersPerm&USER_CAN_WRITE)
+			res |= USER_CAN_WRITE;
+	}
+
+	for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
+		for(int k = 0;k<USER_ABERTOS;k++){
+			if(clientes[i]->abertos[k]==ficheiro->inumber){
+				switch(clientes[i]->mode[k]){
+					case WRITE:
+						if(self == clientes[i]->uid)
+							res|=OPEN_USER_WRITE;
+						else
+							res|=OPEN_OTHER_WRITE;
+						break;
+					case READ:
+						if(self == clientes[i]->uid)
+							res|=OPEN_USER_READ;
+						else
+							res|=OPEN_OTHER_READ;
+						break;
+					case RW:
+						if(self == clientes[i]->uid){
+							res|=OPEN_USER_READ;
+							res|=OPEN_USER_WRITE;
+						}
+						else {
+							res|=OPEN_OTHER_READ;
+							res|=OPEN_OTHER_WRITE;
+						}
+						break;
+				}
+				continue;		//verifica user seguinte
+			}
+		}
+	}
+	return res;
 }
