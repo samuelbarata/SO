@@ -144,7 +144,44 @@ int lookup(tecnicofs* fs, char *name){
 	return inumber;
 }
 
-int openFile(tecnicofs *fs, char* filename,char* mode){return 0;}
+int openFile(tecnicofs *fs, char* filename,char* mode){
+	int index = hash(name, numberBuckets);
+	int error_code = 0, aux;
+	uid_t owner;
+	permission ownerPerm,othersPerm;
+	char* fileContents=NULL;
+	sync_wrlock(&(fs->bstLock[index]));
+	node* searchNode = search(fs->bstRoot[index], name);
+
+	//Verificar se ficheiro existe
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	else
+		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
+
+	if(error_code);
+	else if(aux<0)
+		error_code = TECNICOFS_ERROR_OTHER;
+	else if(searchNode->isOpen)
+		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+	else if((user==owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))	//0b00000001 = WRITE
+		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
+
+	if(error_code){
+		sync_unlock(&(fs->bstLock[index]));
+		return error_code;
+	}
+
+	searchNode -> nUsers++;
+	searchNode -> users = realloc(searchNode -> users, sizeof(uid_t) * searchNode -> nUsers)
+	cliente -> 
+	sync_unlock(&(fs->bstLock[index]));
+	return error_code;
+
+}
+
+
+
 int closeFile(tecnicofs *fs, char* filename){return 0;}
 int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer){return 0;}
 int readFromFile(tecnicofs *fs, char* filename, char* len){return 0;}

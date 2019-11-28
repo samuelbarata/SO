@@ -66,7 +66,7 @@ FILE * openOutputFile() {
     return fp;
 }
 
-int applyCommands(char* command, uid_t owner){
+int applyCommands(char* command, uid_t user){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
@@ -78,10 +78,10 @@ int applyCommands(char* command, uid_t owner){
 
         switch (token) {
             case 'c':
-                return create(fs, arg1, owner, permConv(arg2)); //FIXME: 0: owner
+                return create(fs, arg1, user, permConv(arg2)); //FIXME: 0: user
 				break;
             case 'd':
-                return delete(fs, arg1, owner);
+                return delete(fs, arg1, user);
                 break;
             case 'r':
                 return reName(fs, arg1, arg2, iNumber);
@@ -184,7 +184,7 @@ void connections(){
 		if(newsockfd < 0)
 			perror("server: accept error");
 
-        cliente=malloc(sizeof(client));
+        cliente = malloc(sizeof(client));
 
 		ucred_len = sizeof(struct ucred);
         if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
@@ -195,6 +195,10 @@ void connections(){
         cliente->socket=newsockfd;
         cliente->pid=ucreds.pid;
         cliente->uid=ucreds.uid;
+
+        for(int i = 0; i < USER_ABERTOS; i++){
+            client -> abertos[i] = -1;
+        }
 
         clients++;
         workers = realloc(workers,sizeof(pthread_t*)*clients+1);

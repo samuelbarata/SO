@@ -2,6 +2,7 @@
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
+#define USER_ABERTOS 5
 
 #define ARRAY_SIZE 10
 #define MAX_INPUT_SIZE 100
@@ -15,6 +16,7 @@ typedef struct client{
 	int socket;
 	pid_t pid;
 	uid_t uid;
+	int abertos[USER_ABERTOS];
 } client;
 
 #endif /* CONSTANTS_H */
