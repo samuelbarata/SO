@@ -233,7 +233,7 @@ int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user)
 }
 
 int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
-	int error_code = 0, extendedPermissions=0;
+	int error_code = 0, extendedPermissions=0, aux;
 	int index = hash(filename, numberBuckets);
 
 	uid_t owner;
@@ -258,13 +258,13 @@ int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
 		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
 	else if (!(extendedPermissions & OPEN_USER_READ))
 		error_code = TECNICOFS_ERROR_INVALID_MODE;
-	else	//aberto e pode ler
-		error_code = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,&len);
-
+	else{	//aberto e pode ler
+		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,cmp);
+		if(aux<0||aux!=cmp)
+			error_code = TECNICOFS_ERROR_OTHER;
+	}
 	if(!error_code){
-		if(cmp<len)
-			len=cmp;
-		if(write(user->socket,fileContents,len)!=len)
+		if(write(user->socket,fileContents,cmp)!=cmp)
 			error_code = TECNICOFS_ERROR_OTHER;
 	}
 
