@@ -169,17 +169,26 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	if(!error_code){
 		switch(mode){
 			case READ:
-				if(extendedPermissions & USER_CAN_READ && !(extendedPermissions & OPEN_OTHER_WRITE))
-					;/*ABRIR LEITURA*/
+				if(!(extendedPermissions & USER_CAN_READ && !(extendedPermissions & OPEN_OTHER_WRITE)))
+					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
 			case WRITE:
-				if(extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ))
-					;/*ABRIR ESCREVER*/
+				if(!(extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
+					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
 			case RW:
-				if(extendedPermissions & USER_CAN_READ && extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ))
-					;/*ABRIR LER ESCREVER*/
+				if(!(extendedPermissions & USER_CAN_READ && extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
+					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
+		}
+	}
+	if(!error_code){
+		for(int i = 0;i<USER_ABERTOS;i++){
+			if(user->abertos[i] == -1){
+				user->abertos[i] = searchNode->inumber;
+				user->mode[i] = mode;
+				break;
+			}
 		}
 	}
 	sync_unlock(&(fs->bstLock[index]));
@@ -267,7 +276,7 @@ int checkUserPerms(client* cliente , node* ficheiro){
 						}
 						break;
 				}
-				continue;		//verifica user seguinte
+				continue;	//verifica user seguinte
 			}
 		}
 	}
