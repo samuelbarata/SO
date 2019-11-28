@@ -10,9 +10,6 @@
 typedef struct node {
     char* key;
     int inumber;
-    uid_t* users;
-    int* mode;
-    int nUsers;
     struct node* left;
     struct node* right;
 } node;

@@ -17,6 +17,7 @@ typedef struct client{
 	pid_t pid;
 	uid_t uid;
 	int abertos[USER_ABERTOS];
+	int mode[USER_ABERTOS];
 } client;
 
 #endif /* CONSTANTS_H */
