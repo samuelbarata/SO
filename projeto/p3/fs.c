@@ -94,7 +94,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_READ ) && !error_code)
+	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE ) && !error_code)
 		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
 
 	if(error_code){
@@ -111,8 +111,26 @@ int delete(tecnicofs* fs, char *name, client *user){
 int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
+	int error_code=0, extendedPermissions, inumber=-1;
+	sync_rdlock(&(fs->bstLock[index0]));
 	node* searchNode = search(fs->bstRoot[index0], name);
+	
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
 
+	if(!error_code)
+		extendedPermissions = checkUserPerms(user , searchNode);
+
+	sync_unlock(&(fs->bstLock[index0]));
+	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
+		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
+
+	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE) && !error_code)
+		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+
+	if(error_code)
+		return error_code;
+	
 	if(index0!=index1)
 		for(int i=0, unlocked=TRUE; unlocked; usleep(rand()%100 * MINGUA_CONSTANT*i*i), i++){	//devolve valor  [0, 0.1] * i^2
 			unlocked=TRUE;
@@ -126,13 +144,21 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	else
 		sync_wrlock(&(fs->bstLock[index1]));
 
+	if(!searchNode){
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+		sync_unlock(&(fs->bstLock[index1]));
+		if(index0!=index1)
+			sync_unlock(&(fs->bstLock[index0]));
+		return error_code;
+	}
+	inumber = searchNode->inumber;
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
-	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, searchNode->inumber);	//adiciona
+	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
 	
 	sync_unlock(&(fs->bstLock[index1]));
 	if(index0!=index1)
 		sync_unlock(&(fs->bstLock[index0]));
-	return 0;
+	return error_code;
 }
 
 int lookup(tecnicofs* fs, char *name){
@@ -242,9 +268,7 @@ int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
 	int len;
 	int cmp = atoi(len);
 
-
 	sync_rlock(&(fs->bstLock[index]));
-
 
 	node* searchNode = search(fs->bstRoot[index], filename);
 
