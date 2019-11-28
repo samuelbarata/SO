@@ -44,16 +44,28 @@ int tfsRename(char *filenameOld, char *filenameNew){
 }
 
 int tfsOpen(char *filename, permission mode){
-	
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(strlen(filename)+5));
+	sprintf(msg, "%c %s %d", 'o',filename, mode);
+	res = sendMsg(msg);
+	printf("\nopen: %s, %d\n", msg, res);
+	free(msg);
+	return res;
 }
 
 int tfsClose(int fd){
-	return EXIT_SUCCESS;
+	char* msg;
+	int res;
+	msg = malloc(sizeof(char)*(4));
+	sprintf(msg, "%c %d", 'x',fd);
+	res = sendMsg(msg);
+	printf("\nclose: %s, %d\n", msg, res);
+	free(msg);
+	return res;
 }
 
 int tfsRead(int fd, char *buffer, int len){
-
 	return EXIT_SUCCESS;
 }
 
@@ -94,6 +106,7 @@ int tfsUnmount(){
 
 int sendMsg(char* msg){
 	int n;
+	char recvline[MAX_INPUT_SIZE];
 	
 	/*Envia string para sockfd; \0 não é enviado*/
 	n=strlen(msg);
@@ -101,9 +114,10 @@ int sendMsg(char* msg){
 		return TECNICOFS_ERROR_OTHER;
 
 	/* Tenta ler string de sockfd.*/
-	n = read(sockfd, msg, MAX_INPUT_SIZE);
+	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
-	msg[n]='\0';
-	return msg[0]+'0';
+	recvline[n]='\0';
+	return atoi(recvline);
+
 }

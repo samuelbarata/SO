@@ -14,7 +14,6 @@ int main(int argc, char** argv) {
     char command[100]="./client-api-test-read.sh ";
     strcat(command, argv[1]);
 
-    int fd = -1;
     assert(tfsMount(argv[1]) == 0);
     assert(tfsCreate("b", RW, READ) == 0);
 

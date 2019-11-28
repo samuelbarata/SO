@@ -265,10 +265,9 @@ int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
 	uid_t owner;
 	permission ownerPerm, othersPerm;
 	char* fileContents=NULL;
-	int len;
 	int cmp = atoi(len);
 
-	sync_rlock(&(fs->bstLock[index]));
+	sync_rdlock(&(fs->bstLock[index]));
 
 	node* searchNode = search(fs->bstRoot[index], filename);
 

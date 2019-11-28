@@ -162,7 +162,8 @@ void *newClient(void* cli){
 			free(cliente);
 			pthread_exit(NULL);
 		}
-		printf("%s\n",line);
+		fprintf(stdout,"%s\n",line);
+        fflush(stdout);
 		res = applyCommands(line, cliente);
 		n = dprintf(cliente->socket, "%d", res);
 		if(n < 0){
@@ -229,7 +230,7 @@ void exitServer(){
             perror("Can't join thread");
         }
     }
-    
+
     TIMER_READ(stopTime);
     fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     print_tecnicofs_tree(outputFp, fs);
