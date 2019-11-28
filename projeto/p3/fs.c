@@ -197,33 +197,14 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	return error_code;
 }
 
-int closeFile(tecnicofs *fs, char* filename, client* user){
-	int error_code = 0, extendedPermissions=0;
-	int index = hash(filename, numberBuckets);
-	sync_rlock(&(fs->bstLock[index]));
+int closeFile(tecnicofs *fs, char* fdstr, client* user){
+	int fd = atoi(fdstr);
+	if(fd<0 || fd>=USER_ABERTOS || user->abertos[fd]==FILE_CLOSED)
+		return TECNICOFS_ERROR_OTHER;
 
-	node* searchNode = search(fs->bstRoot[index], filename);
-
-	if(!searchNode)
-		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-	
-	if(!error_code)
-		extendedPermissions = checkUserPerms(user , searchNode);
-	
-	sync_unlock(&(fs->bstLock[index]));
-
-	if(extendedPermissions&OPEN_USER_READ || extendedPermissions&OPEN_USER_WRITE){
-		for(int i = 0; i<USER_ABERTOS; i++){
-			if(user->abertos[i]==searchNode->inumber){
-				user->abertos[i] = FILE_CLOSED;
-				user->mode[i] = FILE_CLOSED;
-			}
-		}
-	}
-	else
-		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
-	
-	return error_code;
+	user->abertos[fd] = FILE_CLOSED;
+	user->mode[fd] = FILE_CLOSED;
+	return 0;
 }
 
 int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user){
@@ -239,17 +220,13 @@ int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user)
 	if(!error_code)
 		extendedPermissions = checkUserPerms(user , searchNode);
 	
+	if(!(extendedPermissions & OPEN_USER_READ || extendedPermissions & OPEN_USER_WRITE))
+		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
+	else if (!(extendedPermissions & OPEN_USER_WRITE))
+		error_code = TECNICOFS_ERROR_INVALID_MODE;
+	else
+		error_code = inode_set(searchNode->inumber, dataInBuffer, strlen(dataInBuffer));
 
-	/**/
-
-
-
-
-
-
-
-
-	/**/
 
 	sync_unlock(&(fs->bstLock[index]));	
 	return error_code;
@@ -258,7 +235,16 @@ int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user)
 int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
 	int error_code = 0, extendedPermissions=0;
 	int index = hash(filename, numberBuckets);
+
+	uid_t owner;
+	permission ownerPerm, othersPerm;
+	char* fileContents=NULL;
+	int len;
+	int cmp = atoi(len);
+
+
 	sync_rlock(&(fs->bstLock[index]));
+
 
 	node* searchNode = search(fs->bstRoot[index], filename);
 
@@ -268,17 +254,20 @@ int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
 	if(!error_code)
 		extendedPermissions = checkUserPerms(user , searchNode);
 	
-	/**/
+	if(!(extendedPermissions & OPEN_USER_READ || extendedPermissions & OPEN_USER_WRITE))
+		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
+	else if (!(extendedPermissions & OPEN_USER_READ))
+		error_code = TECNICOFS_ERROR_INVALID_MODE;
+	else	//aberto e pode ler
+		error_code = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,&len);
 
+	if(!error_code){
+		if(cmp<len)
+			len=cmp;
+		if(write(user->socket,fileContents,len)!=len)
+			error_code = TECNICOFS_ERROR_OTHER;
+	}
 
-
-
-
-
-
-
-	/**/
-	
 	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
 }
@@ -307,8 +296,6 @@ int checkUserPerms(client* cliente , node* ficheiro){
 	uid_t owner;
 	permission ownerPerm, othersPerm;
 	char* fileContents=NULL;
-	int inumber = ficheiro->inumber;
-	printf("O inumber e: %d\n", inumber);
 	int res=0b00000000, aux = 0b00000000;
 
 	aux = inode_get(ficheiro->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);

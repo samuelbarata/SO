@@ -53,6 +53,7 @@ int tfsClose(int fd){
 }
 
 int tfsRead(int fd, char *buffer, int len){
+
 	return EXIT_SUCCESS;
 }
 
@@ -93,7 +94,6 @@ int tfsUnmount(){
 
 int sendMsg(char* msg){
 	int n;
-	char recvline[MAX_INPUT_SIZE];
 	
 	/*Envia string para sockfd; \0 não é enviado*/
 	n=strlen(msg);
@@ -101,9 +101,9 @@ int sendMsg(char* msg){
 		return TECNICOFS_ERROR_OTHER;
 
 	/* Tenta ler string de sockfd.*/
-	n = read(sockfd, recvline, MAX_INPUT_SIZE);
+	n = read(sockfd, msg, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
-	recvline[n]='\0';
-	return atoi(recvline);
+	msg[n]='\0';
+	return msg[0]+'0';
 }
