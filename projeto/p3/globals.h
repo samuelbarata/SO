@@ -31,6 +31,4 @@ typedef struct client{
 	int mode[USER_ABERTOS];
 } client;
 
-
-
 #endif /* CONSTANTS_H */

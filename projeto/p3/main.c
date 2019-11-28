@@ -31,7 +31,7 @@ sem_t canProduce, canRemove;
 FILE* outputFp=NULL;
 
 tecnicofs* fs;
-
+TIMER_T startTime, stopTime;
 
 
 
@@ -134,6 +134,7 @@ void inits(){
 		perror("server: can't bind local address");
 	
 	listen(sockfd, 5);
+    TIMER_READ(startTime);
 }
 
 
@@ -221,12 +222,16 @@ void connections(){
 void exitServer(){
     int join;
     close(sockfd);      //não deixa receber mais ligações
+    
     for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(workers[i], NULL);
         if(join){
             perror("Can't join thread");
         }
     }
+    
+    TIMER_READ(stopTime);
+    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);

@@ -197,11 +197,91 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	return error_code;
 }
 
+int closeFile(tecnicofs *fs, char* filename, client* user){
+	int error_code = 0, extendedPermissions=0;
+	int index = hash(filename, numberBuckets);
+	sync_rlock(&(fs->bstLock[index]));
+
+	node* searchNode = search(fs->bstRoot[index], filename);
+
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	
+	if(!error_code)
+		extendedPermissions = checkUserPerms(user , searchNode);
+	
+	sync_unlock(&(fs->bstLock[index]));
+
+	if(extendedPermissions&OPEN_USER_READ || extendedPermissions&OPEN_USER_WRITE){
+		for(int i = 0; i<USER_ABERTOS; i++){
+			if(user->abertos[i]==searchNode->inumber){
+				user->abertos[i] = FILE_CLOSED;
+				user->mode[i] = FILE_CLOSED;
+			}
+		}
+	}
+	else
+		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
+	
+	return error_code;
+}
+
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user){
+	int error_code = 0, extendedPermissions=0;
+	int index = hash(filename, numberBuckets);
+	sync_wrlock(&(fs->bstLock[index]));
+
+	node* searchNode = search(fs->bstRoot[index], filename);
+
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	
+	if(!error_code)
+		extendedPermissions = checkUserPerms(user , searchNode);
+	
+
+	/**/
 
 
-int closeFile(tecnicofs *fs, char* filename, client* user){return 0;}
-int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user){return 0;}
-int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){return 0;}
+
+
+
+
+
+
+	/**/
+
+	sync_unlock(&(fs->bstLock[index]));	
+	return error_code;
+}
+
+int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
+	int error_code = 0, extendedPermissions=0;
+	int index = hash(filename, numberBuckets);
+	sync_rlock(&(fs->bstLock[index]));
+
+	node* searchNode = search(fs->bstRoot[index], filename);
+
+	if(!searchNode)
+		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	
+	if(!error_code)
+		extendedPermissions = checkUserPerms(user , searchNode);
+	
+	/**/
+
+
+
+
+
+
+
+
+	/**/
+	
+	sync_unlock(&(fs->bstLock[index]));
+	return error_code;
+}
 
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
