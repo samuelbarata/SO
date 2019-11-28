@@ -8,18 +8,13 @@
 #include "globals.h"
 
 int sockfd=-1;
+int sendMsg(char* msg);	//return the error code from the server
 
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions){
 	char* msg;
 	int res;
 	msg = malloc(sizeof(char)*(strlen(filename)+6));
-	msg[0] = 'c';
-	msg[1] = ' ';
-	strcat(msg, filename);
-	msg[strlen(filename)+2]=' ';
-	msg[strlen(filename)+3]=ownerPermissions + '0';
-	msg[strlen(filename)+4]=othersPermissions + '0';
-	msg[strlen(filename)+5]='\0';
+	sprintf(msg, "%c %s %d%d", 'c',filename, ownerPermissions, othersPermissions);
 	res = sendMsg(msg);
 	printf("\ncreate: %s, %d\n", msg, res);
 	free(msg);
@@ -30,10 +25,7 @@ int tfsDelete(char *filename){
 	char* msg;
 	int res;
 	msg = malloc(sizeof(char)*(strlen(filename)+3));
-	msg[0] = 'd';
-	msg[1] = ' ';
-	strcat(msg, filename);
-	msg[strlen(filename)+2]='\0';
+	sprintf(msg, "%c %s", 'd',filename);
 	res = sendMsg(msg);
 	printf("\ndelete: %s, %d\n",msg, res);
 	free(msg);
@@ -44,12 +36,7 @@ int tfsRename(char *filenameOld, char *filenameNew){
 	char* msg;
 	int res;
 	msg = malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4));
-	msg[0] = 'r';
-	msg[1] = ' ';
-	strcat(msg, filenameOld);
-	msg[strlen(filenameOld)+2]=' ';
-	strcat(msg, filenameNew);
-	msg[strlen(filenameOld)+strlen(filenameNew)+3]='\0';
+	sprintf(msg, "%c %s %s", 'r',filenameOld, filenameNew);
 	res = sendMsg(msg);
 	printf("rename: %s, %d\n",msg, res);
 	free(msg);
@@ -57,6 +44,7 @@ int tfsRename(char *filenameOld, char *filenameNew){
 }
 
 int tfsOpen(char *filename, permission mode){
+	
 	return EXIT_SUCCESS;
 }
 

@@ -9,19 +9,23 @@
 
 typedef struct tecnicofs {
     node** bstRoot;
-    int nextINumber;
     syncMech* bstLock;
 } tecnicofs;
 
 extern int numberBuckets;
+extern client* clients[MAX_CLIENTS];
 
-int obtainNewInumber(tecnicofs* fs);
 tecnicofs* new_tecnicofs();
 void free_tecnicofs(tecnicofs* fs);
-int create(tecnicofs *fs, char *name,uid_t owner, permission *perms);
-int delete(tecnicofs *fs, char *name,uid_t user);
-int reName(tecnicofs* fs, char *name, char *newName, int inumber);
-int lookup(tecnicofs *fs, char *name);
+int create(tecnicofs *fs, char *name,client* owner, permission *perms);
+int delete(tecnicofs *fs, char *name,client* user);
+int reName(tecnicofs* fs, char *name, char *newName, client* user); //, client* user
+int lookup(tecnicofs *fs, char *name); //, client* user
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
+int openFile(tecnicofs *fs, char* filename,char* mode, client* user); //, client* user
+int closeFile(tecnicofs *fs, char* filename, client* user);
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user);
+int readFromFile(tecnicofs *fs, char* filename, char* len, client* user);
+int checkUserPerms(client* , node*);
 
 #endif /* FS_H */

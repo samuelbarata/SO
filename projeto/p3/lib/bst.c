@@ -24,7 +24,7 @@ node* new_node(char* key, int inumber)
     p->inumber = inumber;
     p->left  = NULL;
     p->right = NULL;
-    p->isOpen = FALSE;
+    //p->isOpen = FALSE;
     return p;
 }
 

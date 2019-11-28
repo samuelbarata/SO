@@ -21,6 +21,7 @@ int numberBuckets = 0;
 int stop = 0;           //variavel global avisa quando todos os comandos foram processados
 int sockfd;             //socket servidor
 pthread_t* workers=NULL;    //ligacoes existentes
+client* clients[MAX_CLIENTS];      //array clients
 
 int numberCommands = 0; //numero de comandos a processar
 
@@ -30,6 +31,9 @@ sem_t canProduce, canRemove;
 FILE* outputFp=NULL;
 
 tecnicofs* fs;
+
+
+
 
 static void displayUsage (const char* appName){
     fprintf(stderr, "Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
@@ -66,46 +70,39 @@ FILE * openOutputFile() {
     return fp;
 }
 
-int applyCommands(char* command, uid_t owner){
+int applyCommands(char* command, client* user){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
-        int iNumber, newiNumber;
 
-        if (command == NULL){
-            mutex_unlock(&commandsLock);
+        if (command == NULL)
             return 0;
-        }
         
         sscanf(command, "%c %s %s", &token, arg1, arg2);
 
         switch (token) {
             case 'c':
-                //iNumber = obtainNewInumber(fs);
-                mutex_unlock(&commandsLock);
-                return create(fs, arg1, /*iNumber,*/ owner, permConv(arg2)); //FIXME: 0: owner
-                break;
-            case 'l':
-                mutex_unlock(&commandsLock);
-                int searchResult = lookup(fs, arg1);
-                if(!searchResult)
-                    printf("%s not found\n", arg1);
-                else
-                    printf("%s found with inumber %d\n", arg1, searchResult);
-                break;
+                return create(fs, arg1, user, permConv(arg2)); //FIXME: 0: user
+				break;
             case 'd':
-                mutex_unlock(&commandsLock);
-                return delete(fs, arg1, owner);
+                return delete(fs, arg1, user);
                 break;
             case 'r':
-            	iNumber = lookup(fs, arg1);         //inumber do ficheiro atual
-                newiNumber = lookup(fs, arg2);      //ficheiro novo existe?
-                mutex_unlock(&commandsLock);
-                if(iNumber && !newiNumber)
-                    return reName(fs, arg1, arg2, iNumber);
+                return reName(fs, arg1, arg2, user); //inumber unittialized
+                break;
+            case 'l':
+				return readFromFile(fs, arg1, arg2, user);
+				break;
+            case 'o':
+                return openFile(fs, arg1, arg2, user);
+                break;
+            case 'x':
+                return closeFile(fs, arg1, user);
+                break;
+            case 'w':
+                return writeToFile(fs, arg1, arg2, user);
                 break;
                 
             default: { /* error */
-                mutex_unlock(&commandsLock);
                 fprintf(stderr, "Error: could not apply command %c\n", token);  //TODO: devolver erro comando not valid em vez de crashar server
                 exit(EXIT_FAILURE);
             }
@@ -114,10 +111,12 @@ int applyCommands(char* command, uid_t owner){
 }
 
 void inits(){ 
+    workers = malloc(sizeof(pthread_t*)*MAX_CLIENTS);
     struct sockaddr_un serv_addr;
     int servlen;
 
-    mutex_init(&commandsLock);
+    bzero(clients, MAX_CLIENTS);
+
     srand(time(NULL));
 
     /* Cria socket stream */
@@ -135,7 +134,6 @@ void inits(){
 		perror("server: can't bind local address");
 	
 	listen(sockfd, 5);
-
 }
 
 
@@ -145,29 +143,26 @@ void *newClient(void* cli){
 	sigaddset(&set, SIGINT);
 	if(pthread_sigmask(SIG_SETMASK, &set, NULL)){
 		perror("sig_mask: Failure");
-		pthread_exit(EXIT_FAILURE);
+		pthread_exit(NULL);
 	}
 	client *cliente = (client*)cli;
 	printf("socket: %02d\n",cliente->socket);
     
 	int n, res;
 	char line[MAX_INPUT_SIZE];
-	int error_code=0;
-	int error_code_size = sizeof(error_code);
-	while(!error_code) {   //FIXME: check if socket still connected
-		getsockopt(cliente->socket, SOL_SOCKET, SO_ERROR, &error_code, &error_code_size);
-	    if(error_code)
-	        break;
-		bzero(line, NULL);
-		n = read(cliente->socket, line, MAX_INPUT_SIZE);
+	//int error_code=0;
+	//unsigned int error_code_size = sizeof(error_code);
+	while(TRUE) {   //FIXME: check if socket still connected
+		n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
 		if (n == 0)
-			continue;
+			break;
 		else if (n < 0){
 			perror("read from socket");
-			pthread_exit(EXIT_FAILURE);
+			free(cliente);
+			pthread_exit(NULL);
 		}
 		printf("%s\n",line);
-		res = applyCommands(line, cliente->uid);
+		res = applyCommands(line, cliente);
 		n = dprintf(cliente->socket, "%d", res);
 		if(n < 0){
 			perror("dprintf");
@@ -179,10 +174,10 @@ void *newClient(void* cli){
 }
 
 void connections(){
-    int clients=0, err;
-    int ucred_len;
+    int nClients=0, err;
+    unsigned int ucred_len;
 
-    struct ucred ucreds;    
+    struct ucred ucreds;
 
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
@@ -190,25 +185,32 @@ void connections(){
 
     for(;;){
 		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr, &clilen);
+		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
 		if(newsockfd < 0)
 			perror("server: accept error");
 
-        cliente=malloc(sizeof(client));
+        cliente = malloc(sizeof(client));
+        nClients++;
 
 		ucred_len = sizeof(struct ucred);
-        if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1)
-            return TECNICOFS_ERROR_OTHER;
-
+        if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
+			perror("cant get client uid");
+			free(cliente);
+			continue;
+		}
         cliente->socket=newsockfd;
-        cliente->pid=ucreds.pid;
         cliente->uid=ucreds.uid;
 
-        clients++;
-        workers = realloc(workers,sizeof(pthread_t*)*clients+1);
-        workers[clients]=NULL;  //marca o fim do array
 
-        err = pthread_create(&workers[clients-1], NULL, newClient, (void*)cliente);
+        for(int i = 0; i < USER_ABERTOS; i++){
+            cliente->abertos[i] = FILE_CLOSED;
+            cliente->mode[i] = FILE_CLOSED;
+        }
+
+        
+		clients[nClients-1]=cliente;
+
+        err = pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
         if (err){
             perror("Can't create thread");
             exit(EXIT_FAILURE);
@@ -218,15 +220,13 @@ void connections(){
 
 void exitServer(){
     int join;
-    pthread_t *pointer; //percorre os workers
     close(sockfd);      //não deixa receber mais ligações
-    for(pointer=workers; pointer!=NULL; pointer++) {       //espera que threads acabem os trabalhos dos clientes
-        join=pthread_join(*pointer, NULL);
+    for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
+        join=pthread_join(workers[i], NULL);
         if(join){
             perror("Can't join thread");
         }
     }
-    mutex_destroy(&commandsLock);   
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);

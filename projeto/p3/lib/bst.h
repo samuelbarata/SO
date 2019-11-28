@@ -10,8 +10,6 @@
 typedef struct node {
     char* key;
     int inumber;
-    int isOpen;
-    
     struct node* left;
     struct node* right;
 } node;
