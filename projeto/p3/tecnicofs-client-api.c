@@ -69,8 +69,8 @@ int tfsClose(int fd){
 int tfsRead(int fd, char *buffer, int len){
 	char* msg;
 	int res, cmp;
-	msg = malloc(sizeof(char)*(3));
-	res = dprintf(sockfd, "%c %d", 'd',fd);
+	msg = malloc(sizeof(char)*(8));
+	res = dprintf(sockfd, "%c %d %d", 'd',fd, len);
 	if(res<0)
 		return TECNICOFS_ERROR_OTHER;
 	free(msg);
@@ -83,7 +83,7 @@ int tfsRead(int fd, char *buffer, int len){
 
 	strncpy(buffer,msg,len);
 
-	printf("\read: %s, %d\n",buffer, res);
+	printf("\nread: %s, %d\n",buffer, res);
 	free(msg);
 	return res;
 }
@@ -92,7 +92,7 @@ int tfsWrite(int fd, char *buffer, int len){
 	char* msg;
 	int res;
 	msg = malloc(sizeof(char)*(6));
-	sprintf(msg, "%c %d %d", 'w', fd, buffer);
+	sprintf(msg, "%c %d %s", 'w', fd, buffer);
 	res = sendMsg(msg);
 	printf("\nwrite: %s, %d\n", msg,res);
 	free(msg);

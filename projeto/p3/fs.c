@@ -247,40 +247,27 @@ int writeToFile(tecnicofs *fs, char* fdstr, char* dataInBuffer, client* user){
 	return 0;
 }
 
-int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){
-	int error_code = 0, extendedPermissions=0, aux;
-	int index = hash(filename, numberBuckets);
-
+int readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
+	int error_code = 0, aux;
+	int fd = atoi(fdstr);
 	uid_t owner;
 	permission ownerPerm, othersPerm;
 	char* fileContents=NULL;
 	int cmp = atoi(len);
 
-	sync_rdlock(&(fs->bstLock[index]));
+	if(user->abertos[fd]==FILE_CLOSED)
+		return TECNICOFS_ERROR_FILE_NOT_OPEN;
+	if(!(user->mode[fd]&READ))
+		return TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	node* searchNode = search(fs->bstRoot[index], filename);
-
-	if(!searchNode)
-		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp);
+	if(aux<0||aux!=cmp)
+		error_code = TECNICOFS_ERROR_OTHER;
 	
-	if(!error_code)
-		extendedPermissions = checkUserPerms(user , searchNode);
-	
-	if(!(extendedPermissions & OPEN_USER_READ || extendedPermissions & OPEN_USER_WRITE))
-		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
-	else if (!(extendedPermissions & OPEN_USER_READ))
-		error_code = TECNICOFS_ERROR_INVALID_MODE;
-	else{	//aberto e pode ler
-		aux = inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,cmp);
-		if(aux<0||aux!=cmp)
-			error_code = TECNICOFS_ERROR_OTHER;
-	}
 	if(!error_code){
 		if(write(user->socket,fileContents,cmp)!=cmp)
 			error_code = TECNICOFS_ERROR_OTHER;
 	}
-
-	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
 }
 
