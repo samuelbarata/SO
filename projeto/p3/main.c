@@ -21,6 +21,7 @@ int numberBuckets = 0;
 int stop = 0;           //variavel global avisa quando todos os comandos foram processados
 int sockfd;             //socket servidor
 pthread_t* workers=NULL;    //ligacoes existentes
+client* clients[MAX_CLIENTS];      //array clients
 
 int numberCommands = 0; //numero de comandos a processar
 
@@ -72,7 +73,6 @@ FILE * openOutputFile() {
 int applyCommands(char* command, client* user){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
-        int iNumber;    //, newiNumber
 
         if (command == NULL)
             return 0;
@@ -87,7 +87,7 @@ int applyCommands(char* command, client* user){
                 return delete(fs, arg1, user);
                 break;
             case 'r':
-                return reName(fs, arg1, arg2, iNumber); //inumber unittialized
+                return reName(fs, arg1, arg2, user); //inumber unittialized
                 break;
             case 'l':
 				return readFromFile(fs, arg1, arg2, user);
@@ -111,8 +111,11 @@ int applyCommands(char* command, client* user){
 }
 
 void inits(){ 
+    workers = malloc(sizeof(pthread_t*)*MAX_CLIENTS);
     struct sockaddr_un serv_addr;
     int servlen;
+
+    bzero(clients, MAX_CLIENTS);
 
     srand(time(NULL));
 
@@ -131,7 +134,6 @@ void inits(){
 		perror("server: can't bind local address");
 	
 	listen(sockfd, 5);
-
 }
 
 
@@ -175,14 +177,11 @@ void connections(){
     int nClients=0, err;
     unsigned int ucred_len;
 
-    struct ucred ucreds;    
+    struct ucred ucreds;
 
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
     client *cliente;
-
-	workers = malloc(sizeof(pthread_t*)*MAX_CLIENTS);
-    clients = malloc(sizeof(client*)*MAX_CLIENTS);
 
     for(;;){
 		clilen = sizeof(cli_addr);
@@ -191,6 +190,7 @@ void connections(){
 			perror("server: accept error");
 
         cliente = malloc(sizeof(client));
+        nClients++;
 
 		ucred_len = sizeof(struct ucred);
         if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
@@ -203,17 +203,12 @@ void connections(){
 
 
         for(int i = 0; i < USER_ABERTOS; i++){
-            cliente-> abertos[i] = -1;
-            cliente-> mode[i] = -1;
+            cliente->abertos[i] = FILE_CLOSED;
+            cliente->mode[i] = FILE_CLOSED;
         }
 
-        nClients++;
-        workers = realloc(workers,sizeof(pthread_t*)*nClients+1);
-        clients = realloc(clients,sizeof(client*)*nClients+1);
-
-        workers[nClients]='\0';	//marca o fim do array
+        
 		clients[nClients-1]=cliente;
-		clients[nClients]=NULL;	//marca o fim do array
 
         err = pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
         if (err){
@@ -225,10 +220,9 @@ void connections(){
 
 void exitServer(){
     int join;
-    pthread_t *pointer; //percorre os workers
     close(sockfd);      //não deixa receber mais ligações
-    for(pointer = workers; pointer!='\0'; pointer++) {       //espera que threads acabem os trabalhos dos clientes
-        join=pthread_join(*pointer, NULL);
+    for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
+        join=pthread_join(workers[i], NULL);
         if(join){
             perror("Can't join thread");
         }
@@ -243,7 +237,6 @@ void exitServer(){
 }
 
 int main(int argc, char* argv[]) {
-    printf("Entrei\n");
     signal(SIGINT, exitServer);
     parseArgs(argc, argv);
 

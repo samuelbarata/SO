@@ -4,6 +4,7 @@
 #define CONSTANTS_H
 
 #define USER_ABERTOS 5
+#define FILE_CLOSED -1
 #define MAX_CLIENTS 100
 #define ARRAY_SIZE 10
 #define MAX_INPUT_SIZE 100

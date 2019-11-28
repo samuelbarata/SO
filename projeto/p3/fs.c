@@ -7,7 +7,7 @@
 #include "lib/hash.h"
 #include "lib/inodes.h"
 
-client** clients=NULL;      //array clients
+client* clients[MAX_CLIENTS];      //array clients
 
 tecnicofs* new_tecnicofs(){
 	tecnicofs*fs = malloc(sizeof(tecnicofs));
@@ -86,7 +86,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 	if(!searchNode)
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
 	
-	if(inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0)<0){
+	if(!error_code && inode_get(searchNode->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0)<0){
 		error_code = TECNICOFS_ERROR_OTHER;
 	}
 	if(!error_code)
@@ -108,9 +108,10 @@ int delete(tecnicofs* fs, char *name, client *user){
 	return error_code;
 }
 
-int reName(tecnicofs* fs, char *name, char *newName, int inumber){
+int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
+	node* searchNode = search(fs->bstRoot[index0], name);
 
 	if(index0!=index1)
 		for(int i=0, unlocked=TRUE; unlocked; usleep(rand()%100 * MINGUA_CONSTANT*i*i), i++){	//devolve valor  [0, 0.1] * i^2
@@ -126,7 +127,7 @@ int reName(tecnicofs* fs, char *name, char *newName, int inumber){
 		sync_wrlock(&(fs->bstLock[index1]));
 
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
-	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
+	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, searchNode->inumber);	//adiciona
 	
 	sync_unlock(&(fs->bstLock[index1]));
 	if(index0!=index1)
@@ -161,7 +162,7 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 		extendedPermissions = checkUserPerms(user , searchNode);
 
 	int mode = atoi(modeIn);
-	if(*modeIn != 1 && *modeIn != 2 && *modeIn != 3 && *modeIn != 0)
+	if(mode & 0b11111100)
 		error_code=TECNICOFS_ERROR_INVALID_MODE;
 
 	if(!error_code && !(extendedPermissions&ESPACO_AVAILABLE))
