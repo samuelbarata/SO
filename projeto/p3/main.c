@@ -66,7 +66,7 @@ FILE * openOutputFile() {
     return fp;
 }
 
-int applyCommands(char* command, uid_t user){
+int applyCommands(char* command, client* user){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
         int iNumber, newiNumber;
@@ -84,19 +84,19 @@ int applyCommands(char* command, uid_t user){
                 return delete(fs, arg1, user);
                 break;
             case 'r':
-                return reName(fs, arg1, arg2, iNumber);
+                return reName(fs, arg1, arg2, iNumber, user);
                 break;
             case 'l':
-				return readFromFile(fs, arg1, arg2);
+				return readFromFile(fs, arg1, arg2, user);
 				break;
             case 'o':
-                return openFile(fs, arg1, arg2);
+                return openFile(fs, arg1, arg2, user);
                 break;
             case 'x':
-                return closeFile(fs, arg1);
+                return closeFile(fs, arg1, user);
                 break;
             case 'w':
-                return writeToFile(fs, arg1, arg2);
+                return writeToFile(fs, arg1, arg2, user);
                 break;
                 
             default: { /* error */
@@ -157,7 +157,7 @@ void *newClient(void* cli){
 			pthread_exit(NULL);
 		}
 		printf("%s\n",line);
-		res = applyCommands(line, cliente->uid);
+		res = applyCommands(line, cliente);
 		n = dprintf(cliente->socket, "%d", res);
 		if(n < 0){
 			perror("dprintf");
@@ -196,8 +196,10 @@ void connections(){
         cliente->pid=ucreds.pid;
         cliente->uid=ucreds.uid;
 
+
         for(int i = 0; i < USER_ABERTOS; i++){
             client -> abertos[i] = -1;
+            client -> mode[i] = -1;
         }
 
         clients++;

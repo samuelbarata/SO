@@ -44,6 +44,7 @@ int tfsRename(char *filenameOld, char *filenameNew){
 }
 
 int tfsOpen(char *filename, permission mode){
+	
 	return EXIT_SUCCESS;
 }
 

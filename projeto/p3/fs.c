@@ -144,7 +144,7 @@ int lookup(tecnicofs* fs, char *name){
 	return inumber;
 }
 
-int openFile(tecnicofs *fs, char* filename,char* mode){
+int openFile(tecnicofs *fs, char* filename,char* mode, client user){
 	int index = hash(name, numberBuckets);
 	int error_code = 0, aux;
 	uid_t owner;
@@ -164,7 +164,13 @@ int openFile(tecnicofs *fs, char* filename,char* mode){
 		error_code = TECNICOFS_ERROR_OTHER;
 	else if(searchNode->isOpen)
 		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
-	else if((user==owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))	//0b00000001 = WRITE
+
+	if (mode & 0b00000010){ // read
+		if((user == owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))
+			return TECNICOFS_ERROR_PERMISSION_DENIED
+		
+	}
+	else if((user == owner && !(ownerPerm & 0b00000010)) && !(othersPerm & 0b00000010))	//0b00000001 = WRITE
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(error_code){
@@ -174,7 +180,37 @@ int openFile(tecnicofs *fs, char* filename,char* mode){
 
 	searchNode -> nUsers++;
 	searchNode -> users = realloc(searchNode -> users, sizeof(uid_t) * searchNode -> nUsers)
-	cliente -> 
+
+	for (i = 0; i < 5, i++){
+		if (user -> abertos[i] == searchNode -> inumber){
+			return TECNICOFS_ERROR_FILE_IS_OPEN;
+		}
+	}
+
+	if ()
+
+	}
+	if (i == 5 && user -> abertos[i] != -1){
+		return TECNICOFS_ERROR_MAXED_OPEN_FILES;
+	}
+
+
+	user -> abertos[i] = searchNode -> inumber;
+	user -> mode[i] = atoi(mode);
+
+	for (i = 0; i < 5, i++){
+		if (user -> abertos[i] == -1){
+		break;
+	}
+
+
+
+
+
+
+
+
+
 	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
 
@@ -182,9 +218,9 @@ int openFile(tecnicofs *fs, char* filename,char* mode){
 
 
 
-int closeFile(tecnicofs *fs, char* filename){return 0;}
-int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer){return 0;}
-int readFromFile(tecnicofs *fs, char* filename, char* len){return 0;}
+int closeFile(tecnicofs *fs, char* filename, client user){return 0;}
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client user){return 0;}
+int readFromFile(tecnicofs *fs, char* filename, char* len, client user){return 0;}
 
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
