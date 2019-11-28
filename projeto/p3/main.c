@@ -31,6 +31,9 @@ FILE* outputFp=NULL;
 
 tecnicofs* fs;
 
+
+
+
 static void displayUsage (const char* appName){
     fprintf(stderr, "Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
     exit(EXIT_FAILURE);
@@ -69,7 +72,7 @@ FILE * openOutputFile() {
 int applyCommands(char* command, client* user){
         char token;
         char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
-        int iNumber, newiNumber;
+        int iNumber;    //, newiNumber
 
         if (command == NULL)
             return 0;
@@ -84,7 +87,7 @@ int applyCommands(char* command, client* user){
                 return delete(fs, arg1, user);
                 break;
             case 'r':
-                return reName(fs, arg1, arg2, iNumber, user);
+                return reName(fs, arg1, arg2, iNumber); //inumber unittialized
                 break;
             case 'l':
 				return readFromFile(fs, arg1, arg2, user);
@@ -145,8 +148,8 @@ void *newClient(void* cli){
     
 	int n, res;
 	char line[MAX_INPUT_SIZE];
-	int error_code=0;
-	unsigned int error_code_size = sizeof(error_code);
+	//int error_code=0;
+	//unsigned int error_code_size = sizeof(error_code);
 	while(TRUE) {   //FIXME: check if socket still connected
 		n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
 		if (n == 0)
@@ -178,8 +181,8 @@ void connections(){
 	struct sockaddr_un cli_addr;
     client *cliente;
 
-	workers = malloc(workers,sizeof(pthread_t*)*MAX_CLIENTS);
-    clients = malloc(clients,sizeof(client*)*MAX_CLIENTS);
+	workers = malloc(sizeof(pthread_t*)*MAX_CLIENTS);
+    clients = malloc(sizeof(client*)*MAX_CLIENTS);
 
     for(;;){
 		clilen = sizeof(cli_addr);
@@ -224,7 +227,7 @@ void exitServer(){
     int join;
     pthread_t *pointer; //percorre os workers
     close(sockfd);      //não deixa receber mais ligações
-    for(pointer=workers; pointer!='\0'; pointer++) {       //espera que threads acabem os trabalhos dos clientes
+    for(pointer = workers; pointer!='\0'; pointer++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(*pointer, NULL);
         if(join){
             perror("Can't join thread");
@@ -240,6 +243,7 @@ void exitServer(){
 }
 
 int main(int argc, char* argv[]) {
+    printf("Entrei\n");
     signal(SIGINT, exitServer);
     parseArgs(argc, argv);
 

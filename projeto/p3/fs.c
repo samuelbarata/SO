@@ -7,6 +7,7 @@
 #include "lib/hash.h"
 #include "lib/inodes.h"
 
+client** clients=NULL;      //array clients
 
 tecnicofs* new_tecnicofs(){
 	tecnicofs*fs = malloc(sizeof(tecnicofs));
@@ -74,7 +75,7 @@ int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 int delete(tecnicofs* fs, char *name, client *user){
 	//Verificar se ficheiro existe
 	int index = hash(name, numberBuckets);
-	int error_code = 0, aux;
+	int error_code = 0;
 	uid_t owner;
 	permission ownerPerm,othersPerm;
 	int extendedPermissions;
@@ -160,7 +161,7 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 		extendedPermissions = checkUserPerms(user , searchNode);
 
 	int mode = atoi(modeIn);
-	if(modeIn != 1 && modeIn != 2 && modeIn != 3 && modeIn != 0)
+	if(*modeIn != 1 && *modeIn != 2 && *modeIn != 3 && *modeIn != 0)
 		error_code=TECNICOFS_ERROR_INVALID_MODE;
 
 	if(!error_code && !(extendedPermissions&ESPACO_AVAILABLE))
@@ -197,9 +198,9 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 
 
 
-int closeFile(tecnicofs *fs, char* filename, client user){return 0;}
-int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client user){return 0;}
-int readFromFile(tecnicofs *fs, char* filename, char* len, client user){return 0;}
+int closeFile(tecnicofs *fs, char* filename, client* user){return 0;}
+int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user){return 0;}
+int readFromFile(tecnicofs *fs, char* filename, char* len, client* user){return 0;}
 
 
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
@@ -226,6 +227,7 @@ int checkUserPerms(client* cliente , node* ficheiro){
 	permission ownerPerm, othersPerm;
 	char* fileContents=NULL;
 	int inumber = ficheiro->inumber;
+	printf("O inumber e: %d\n", inumber);
 	int res=0b00000000, aux = 0b00000000;
 
 	aux = inode_get(ficheiro->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);

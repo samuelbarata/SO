@@ -30,6 +30,6 @@ typedef struct client{
 	int mode[USER_ABERTOS];
 } client;
 
-client** clients=NULL;		//array clients
+
 
 #endif /* CONSTANTS_H */
