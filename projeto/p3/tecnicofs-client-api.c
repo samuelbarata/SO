@@ -7,6 +7,7 @@
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
 #include "globals.h"
+#include "lib/safe.h"
 
 int sockfd=-1;
 int sendMsg(char* msg, char* res);
@@ -14,10 +15,9 @@ int sendMsg(char* msg, char* res);
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(strlen(filename)+6));
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+6), MAIN);
 	sprintf(msg, "%c %s %d%d", 'c',filename, ownerPermissions, othersPermissions);
 	res = sendMsg(msg, NULL);
-	printf("create: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
@@ -25,10 +25,9 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 int tfsDelete(char *filename){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(strlen(filename)+3));
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+3), MAIN);
 	sprintf(msg, "%c %s", 'd',filename);
 	res = sendMsg(msg, NULL);
-	printf("delete: %s, %d\n\n",msg, res);
 	free(msg);
 	return res;
 }
@@ -36,10 +35,9 @@ int tfsDelete(char *filename){
 int tfsRename(char *filenameOld, char *filenameNew){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4));
+	msg = safe_malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4), MAIN);
 	sprintf(msg, "%c %s %s", 'r',filenameOld, filenameNew);
 	res = sendMsg(msg, NULL);
-	printf("rename: %s, %d\n\n",msg, res);
 	free(msg);
 	return res;
 }
@@ -47,10 +45,9 @@ int tfsRename(char *filenameOld, char *filenameNew){
 int tfsOpen(char *filename, permission mode){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(strlen(filename)+5));
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+5),MAIN);
 	sprintf(msg, "%c %s %d", 'o',filename, mode);
 	res = sendMsg(msg, NULL);
-	printf("open: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
@@ -58,10 +55,9 @@ int tfsOpen(char *filename, permission mode){
 int tfsClose(int fd){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(4));
+	msg = safe_malloc(sizeof(char)*(4), MAIN);
 	sprintf(msg, "%c %d", 'x',fd);
 	res = sendMsg(msg, NULL);
-	printf("close: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
@@ -70,15 +66,12 @@ int tfsRead(int fd, char *buffer, int len){
 	char *msg, *output;
 	int res;
 
-	msg = malloc(sizeof(char)*(9));	//max len = 9999
+	msg = safe_malloc(sizeof(char)*(9),MAIN);	//max len = 9999
 	sprintf(msg, "%c %d %d", 'l',fd, len);
 	
-	output = malloc(len);
+	output = safe_malloc(len, MAIN);
 	res = sendMsg(msg, output);
-	free(msg);
-	
-	printf("read: %s, %d\n\n",output, res);
-	
+	free(msg);	
 	if(res != 0){
 		free(output);
 		return res;
@@ -96,7 +89,6 @@ int tfsWrite(int fd, char *buffer, int len){
 	msg = malloc(sizeof(char)*(6));
 	sprintf(msg, "%c %d %s", 'w', fd, buffer);
 	res = sendMsg(msg, NULL);
-	printf("write: %s, %d\n\n", msg,res);
 	free(msg);
 	return res;
 }
@@ -143,6 +135,8 @@ int sendMsg(char* msg, char* res){
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
 	if(err!=n)
 		return TECNICOFS_ERROR_OTHER;
+	
+	debug_print("%s ", msg);
 
 	/* Tenta ler string de sockfd.*/
 	bzero(recvline, MAX_INPUT_SIZE);
@@ -150,6 +144,7 @@ int sendMsg(char* msg, char* res){
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
 	recvline[n]='\0';
+	debug_print("%s\n", recvline);
 	sscanf(recvline, "%d %s", &n, res);
 	return n;
 }

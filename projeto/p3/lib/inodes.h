@@ -23,6 +23,4 @@ int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *other
                      char* fileContents, int len);
 int inode_set(int inumber, char *contents, int len);
 
-permission *permConv(char* perms);    //recebe string com permissões; devolve array int [owner, others]
-
 #endif /* INODES_H */

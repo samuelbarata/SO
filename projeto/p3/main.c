@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #include <limits.h>
 
+#include "lib/safe.h"
 #include "lib/timer.h"
 #include "lib/inodes.h"
 #include "fs.h"
@@ -27,8 +28,7 @@ client* clients[MAX_CLIENTS];      //array clients
 int numberCommands = 0; //numero de comandos a processar
 
 pthread_mutex_t commandsLock;   //lock do vetor de comandos
-sem_t canProduce, canRemove;
-
+sigset_t set;
 FILE* outputFp=NULL;
 
 tecnicofs* fs;
@@ -37,13 +37,13 @@ TIMER_T startTime, stopTime;
 
 
 static void displayUsage (const char* appName){
-    fprintf(stderr, "Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
-    exit(EXIT_FAILURE);
+	fprintf(stderr,"Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
+	exit(EXIT_FAILURE);
 }
 
 static void parseArgs (long argc, char* const argv[]){
     if (argc != 4) {
-        fprintf(stderr, "Invalid format:\n");
+        fprintf(stderr,"Invalid format:\n");
         displayUsage(argv[0]);
     }
 
@@ -51,14 +51,9 @@ static void parseArgs (long argc, char* const argv[]){
     global_outputFile = argv[2];
     numberBuckets = atoi(argv[3]);
     if (numberBuckets<=0) {
-        fprintf(stderr, "Invalid number of buckets\n");
+        fprintf(stderr,"Invalid number of buckets\n");
         displayUsage(argv[0]);
     }
-}
-
-void errorParse(int lineNumber){
-    fprintf(stderr, "Error: line %d invalid\n", lineNumber);
-    exit(EXIT_FAILURE);
 }
 
 FILE * openOutputFile() {
@@ -73,14 +68,22 @@ FILE * openOutputFile() {
 
 char* applyCommands(char* command, client* user){
     char token;
-    char arg1[MAX_INPUT_SIZE]="", arg2[MAX_INPUT_SIZE]="";
+    char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
     char *res=NULL;
     int code=INT_MAX;
+
+	bzero(arg1, MAX_INPUT_SIZE);
+	bzero(arg2, MAX_INPUT_SIZE);
 
     if (command == NULL)
         return 0;
 
-    sscanf(command, "%c %s %s", &token, arg1, arg2);
+    if(sscanf(command, "%c %s %s", &token, arg1, arg2)<0){
+        perror("error processing input");
+        res = safe_malloc(CODE_SIZE, THREAD);
+        sprintf(res, "%d", TECNICOFS_ERROR_OTHER);
+        return res;
+    }
 
     switch (token) {
         case 'c':
@@ -106,20 +109,22 @@ char* applyCommands(char* command, client* user){
             break;
             
         default: { /* error */
-            fprintf(stderr, "Error: could not apply command %c\n", token);
+            fprintf(stderr,"Error: could not apply command %c\n", token);
             code= TECNICOFS_ERROR_OTHER;
         }
     }
     if(code == INT_MAX)
         return res;
     
-    res = malloc(CODE_SIZE);
+    res = safe_malloc(CODE_SIZE, THREAD);
     sprintf(res, "%d", code);
     return res;
 }
 
 void inits(){ 
-    workers = malloc(sizeof(pthread_t*)*MAX_CLIENTS);
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+    workers = safe_malloc(sizeof(pthread_t*)*MAX_CLIENTS, MAIN);
     struct sockaddr_un serv_addr;
     int servlen;
 
@@ -128,8 +133,10 @@ void inits(){
     srand(time(NULL));
 
     /* Cria socket stream */
-	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
 		perror("server: can't open stream socket");
+		exit(EXIT_FAILURE);
+	}
 
     /*Elimina o nome, para o caso de já existir.*/
 	unlink(global_SocketName);
@@ -147,15 +154,12 @@ void inits(){
 
 
 void *newClient(void* cli){
-	sigset_t set;   //exemplo manual linux
-	sigemptyset(&set);
-	sigaddset(&set, SIGINT);
 	if(pthread_sigmask(SIG_SETMASK, &set, NULL)){
 		perror("sig_mask: Failure");
 		pthread_exit(NULL);
 	}
 	client *cliente = (client*)cli;
-	printf("socket: %02d\n",cliente->socket);
+	debug_print("NEW CONNECTION: %02d\n",cliente->socket);
     
 	int n;
 	char *res;
@@ -171,9 +175,13 @@ void *newClient(void* cli){
 			free(cliente);
 			pthread_exit(NULL);
 		}
-		fprintf(stdout,"%s\n",line);
+		debug_print("%d: %s",cliente->socket, line);
+
 		fflush(stdout);
 		res = applyCommands(line, cliente);
+
+        debug_print(": %s\n",res);
+
 		n = dprintf(cliente->socket, "%s", res);
 		free(res);
 		if(n < 0){
@@ -181,7 +189,7 @@ void *newClient(void* cli){
 			pthread_exit(NULL);
 		}
 	}
-	printf("exit: %02d\n",cliente->socket);
+	debug_print("EXIT CLIENT: %02d\n",cliente->socket);
 	free(cliente);
 	return NULL;
 }
@@ -198,6 +206,10 @@ void connections(){
 
     for(;;){
 		clilen = sizeof(cli_addr);
+		if(nClients>=MAX_CLIENTS){
+			fprintf(stdout, "max client number reached");
+			raise(SIGINT);
+		}
 		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
 		if(newsockfd < 0)
 			perror("server: accept error");
@@ -214,10 +226,9 @@ void connections(){
         cliente->socket=newsockfd;
         cliente->uid=ucreds.uid;
 
-
         for(int i = 0; i < USER_ABERTOS; i++){
-            cliente->abertos[i] = FILE_CLOSED;
-            cliente->mode[i] = FILE_CLOSED;
+            cliente->ficheiros[i].fd = FILE_CLOSED;
+            cliente->ficheiros[i].mode = NONE;
         }
 
         
@@ -232,7 +243,10 @@ void connections(){
 }
 
 void exitServer(){
+	pthread_sigmask(SIG_SETMASK, &set, NULL);
+
     int join;
+    fprintf(stdout, "\b\bExitting Server...");
     close(sockfd);      //não deixa receber mais ligações
     
     for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
