@@ -17,7 +17,7 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 	msg = malloc(sizeof(char)*(strlen(filename)+6));
 	sprintf(msg, "%c %s %d%d", 'c',filename, ownerPermissions, othersPermissions);
 	res = sendMsg(msg, NULL);
-	printf("\ncreate: %s, %d\n", msg, res);
+	printf("create: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
@@ -28,7 +28,7 @@ int tfsDelete(char *filename){
 	msg = malloc(sizeof(char)*(strlen(filename)+3));
 	sprintf(msg, "%c %s", 'd',filename);
 	res = sendMsg(msg, NULL);
-	printf("\ndelete: %s, %d\n",msg, res);
+	printf("delete: %s, %d\n\n",msg, res);
 	free(msg);
 	return res;
 }
@@ -39,7 +39,7 @@ int tfsRename(char *filenameOld, char *filenameNew){
 	msg = malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4));
 	sprintf(msg, "%c %s %s", 'r',filenameOld, filenameNew);
 	res = sendMsg(msg, NULL);
-	printf("rename: %s, %d\n",msg, res);
+	printf("rename: %s, %d\n\n",msg, res);
 	free(msg);
 	return res;
 }
@@ -50,7 +50,7 @@ int tfsOpen(char *filename, permission mode){
 	msg = malloc(sizeof(char)*(strlen(filename)+5));
 	sprintf(msg, "%c %s %d", 'o',filename, mode);
 	res = sendMsg(msg, NULL);
-	printf("\nopen: %s, %d\n", msg, res);
+	printf("open: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
@@ -61,23 +61,33 @@ int tfsClose(int fd){
 	msg = malloc(sizeof(char)*(4));
 	sprintf(msg, "%c %d", 'x',fd);
 	res = sendMsg(msg, NULL);
-	printf("\nclose: %s, %d\n", msg, res);
+	printf("close: %s, %d\n\n", msg, res);
 	free(msg);
 	return res;
 }
 
 int tfsRead(int fd, char *buffer, int len){
-	char *msg, *res;
-	int cmp;
+	char *msg, *output;
+	int res;
+
 	msg = malloc(sizeof(char)*(9));	//max len = 9999
 	sprintf(msg, "%c %d %d", 'l',fd, len);
-	res = malloc(len);
-	sendMsg(msg, res);
-	strncpy(buffer, res, len);
-	cmp = strlen(buffer);
-	printf("\nread: %s, %d\n",buffer, cmp);
+	
+	output = malloc(len);
+	res = sendMsg(msg, output);
 	free(msg);
-	return cmp;
+	
+	printf("read: %s, %d\n\n",output, res);
+	
+	if(res != 0){
+		free(output);
+		return res;
+	}
+	res = strlen(output);
+	strncpy(buffer, output, res);
+	
+	free(output);
+	return res;
 }
 
 int tfsWrite(int fd, char *buffer, int len){
@@ -86,7 +96,7 @@ int tfsWrite(int fd, char *buffer, int len){
 	msg = malloc(sizeof(char)*(6));
 	sprintf(msg, "%c %d %s", 'w', fd, buffer);
 	res = sendMsg(msg, NULL);
-	printf("\nwrite: %s, %d\n", msg,res);
+	printf("write: %s, %d\n\n", msg,res);
 	free(msg);
 	return res;
 }
@@ -123,15 +133,19 @@ int tfsUnmount(){
 }
 
 int sendMsg(char* msg, char* res){
-	int n;
+	int n, err;
 	char recvline[MAX_INPUT_SIZE];
 	
 	/*Envia string para sockfd; \0 não é enviado*/
 	n=strlen(msg);
-	if (write(sockfd, msg, n) != n)
+	err = write(sockfd, msg, n);
+	if(err<0)
+		return TECNICOFS_ERROR_CONNECTION_ERROR;
+	if(err!=n)
 		return TECNICOFS_ERROR_OTHER;
 
 	/* Tenta ler string de sockfd.*/
+	bzero(recvline, MAX_INPUT_SIZE);
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;

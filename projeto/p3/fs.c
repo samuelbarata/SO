@@ -226,8 +226,10 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 
 int closeFile(tecnicofs *fs, char* fdstr, client* user){
 	int fd = atoi(fdstr);
-	if(fd<0 || fd>=USER_ABERTOS || user->abertos[fd]==FILE_CLOSED)
+	if(fd<0 || fd>=USER_ABERTOS)
 		return TECNICOFS_ERROR_OTHER;
+	if(user->abertos[fd]==FILE_CLOSED)
+		return TECNICOFS_ERROR_FILE_NOT_OPEN;
 
 	user->abertos[fd] = FILE_CLOSED;
 	user->mode[fd] = FILE_CLOSED;
@@ -263,7 +265,7 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 		error_code= TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(!error_code){
-		aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp);
+		aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp-1);
 
 		if(aux<0)
 			error_code = TECNICOFS_ERROR_OTHER;
@@ -272,7 +274,7 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 		sprintf(fileContents, "%d", error_code);
 		return fileContents;
 	}
-	ret = malloc(CODE_SIZE+aux+1);
+	ret = malloc(CODE_SIZE+aux);
 	sprintf(ret, "%d %s", error_code, fileContents);
 	return ret;
 }

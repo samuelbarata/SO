@@ -11,7 +11,7 @@
 #define FALSE				0
 #define TRUE				1
 #define MINGUA_CONSTANT 	0.0001
-#define CODE_SIZE			5
+#define CODE_SIZE			3			//maior codigo == -11
 
 #define USER_CAN_READ		0b00000001
 #define USER_CAN_WRITE		0b00000010
