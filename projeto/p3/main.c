@@ -180,7 +180,7 @@ void *newClient(void* cli){
 		fflush(stdout);
 		res = applyCommands(line, cliente);
 
-        debug_print("%s\n",res);
+        debug_print(": %s\n",res);
 
 		n = dprintf(cliente->socket, "%s", res);
 		free(res);
@@ -227,8 +227,8 @@ void connections(){
         cliente->uid=ucreds.uid;
 
         for(int i = 0; i < USER_ABERTOS; i++){
-            cliente->abertos[i] = FILE_CLOSED;
-            cliente->mode[i] = FILE_CLOSED;
+            cliente->ficheiros[i].fd = FILE_CLOSED;
+            cliente->ficheiros[i].mode = NONE;
         }
 
         

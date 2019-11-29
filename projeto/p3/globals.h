@@ -13,8 +13,8 @@
 #define MINGUA_CONSTANT 	0.0001
 #define CODE_SIZE			4			//maior codigo == "-11\0"
 
-#define USER_CAN_READ		0b00000001
-#define USER_CAN_WRITE		0b00000010
+//#define USER_CAN_READ		0b00000001
+//#define USER_CAN_WRITE		0b00000010
 #define OPEN_USER_READ		0b00000100
 #define OPEN_USER_WRITE		0b00001000
 #define	OPEN_OTHER_READ		0b00010000
@@ -23,12 +23,16 @@
 
 #include <sys/types.h>
 #include <stdlib.h>
+#include "tecnicofs-api-constants.h"
+typedef struct ficheiro{
+	int fd;
+	permission mode;
+} ficheiro;
 
 typedef struct client{
 	int socket;
 	uid_t uid;
-	int abertos[USER_ABERTOS];
-	int mode[USER_ABERTOS];
+	ficheiro ficheiros[USER_ABERTOS];
 } client;
 
 #include <stdio.h>

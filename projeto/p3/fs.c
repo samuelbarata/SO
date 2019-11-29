@@ -1,4 +1,5 @@
 #include "fs.h"
+#include "lib/safe.h"
 #include "lib/bst.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -91,7 +92,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 	}
 	if(!error_code)
 		extendedPermissions = checkUserPerms(user , searchNode);
-	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
+	if(!(extendedPermissions & WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE ) && !error_code)
@@ -122,7 +123,7 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 		extendedPermissions = checkUserPerms(user , searchNode);
 
 	sync_unlock(&(fs->bstLock[index0]));
-	if(!(extendedPermissions & USER_CAN_WRITE) && !error_code)
+	if(!(extendedPermissions & WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE) && !error_code)
@@ -197,24 +198,24 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	if(!error_code){
 		switch(mode){
 			case READ:
-				if(!(extendedPermissions & USER_CAN_READ && !(extendedPermissions & OPEN_OTHER_WRITE)))
+				if(!(extendedPermissions & READ && !(extendedPermissions & OPEN_OTHER_WRITE)))
 					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
 			case WRITE:
-				if(!(extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
+				if(!(extendedPermissions & WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
 					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
 			case RW:
-				if(!(extendedPermissions & USER_CAN_READ && extendedPermissions & USER_CAN_WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
+				if(!(extendedPermissions & READ && extendedPermissions & WRITE && !(extendedPermissions & OPEN_OTHER_WRITE) && !(extendedPermissions & OPEN_OTHER_READ)))
 					error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 				break;
 		}
 	}
 	if(!error_code){
 		for(int i = 0;i<USER_ABERTOS;i++){
-			if(user->abertos[i] == -1){
-				user->abertos[i] = searchNode->inumber;
-				user->mode[i] = mode;
+			if(user->ficheiros[i].fd == -1){
+				user->ficheiros[i].fd = searchNode->inumber;
+				user->ficheiros[i].mode = mode;
 				error_code = i;
 				break;
 			}
@@ -228,11 +229,11 @@ int closeFile(tecnicofs *fs, char* fdstr, client* user){
 	int fd = atoi(fdstr);
 	if(fd<0 || fd>=USER_ABERTOS)
 		return TECNICOFS_ERROR_OTHER;
-	if(user->abertos[fd]==FILE_CLOSED)
+	if(user->ficheiros[fd].fd==FILE_CLOSED)
 		return TECNICOFS_ERROR_FILE_NOT_OPEN;
 
-	user->abertos[fd] = FILE_CLOSED;
-	user->mode[fd] = FILE_CLOSED;
+	user->ficheiros[fd].fd = FILE_CLOSED;
+	user->ficheiros[fd].mode = NONE;
 	return 0;
 }
 
@@ -241,12 +242,12 @@ int writeToFile(tecnicofs *fs, char* fdstr, char* dataInBuffer, client* user){
 
 	if(fd<0 || fd>=USER_ABERTOS)
 		return TECNICOFS_ERROR_OTHER;
-	if(user->abertos[fd]==FILE_CLOSED)
+	if(user->ficheiros[fd].fd==FILE_CLOSED)
 		return TECNICOFS_ERROR_FILE_NOT_OPEN;
-	if(!(user->mode[fd] & WRITE))
+	if(!(user->ficheiros[fd].mode & WRITE))
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	inode_set(user->abertos[fd], dataInBuffer, strlen(dataInBuffer));
+	inode_set(user->ficheiros[fd].fd, dataInBuffer, strlen(dataInBuffer));
 	return 0;
 }
 
@@ -259,13 +260,13 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	char *fileContents=malloc(cmp), *ret;
 	bzero(fileContents, cmp);
 	
-	if(user->abertos[fd]==FILE_CLOSED)
+	if(user->ficheiros[fd].fd==FILE_CLOSED)
 		error_code= TECNICOFS_ERROR_FILE_NOT_OPEN;
-	if(!error_code && !(user->mode[fd]&READ))
+	if(!error_code && !(user->ficheiros[fd].mode & READ))
 		error_code= TECNICOFS_ERROR_INVALID_MODE;
 
 	if(!error_code){
-		aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp-1);
+		aux = inode_get(user->ficheiros[fd].fd,&owner,&ownerPerm,&othersPerm,fileContents,cmp-1);
 
 		if(aux<0)
 			error_code = TECNICOFS_ERROR_OTHER;
@@ -286,9 +287,27 @@ void print_tecnicofs_tree(FILE * fp, tecnicofs *fs){
 	}
 }
 
+
+/**
+ * recebe permições XX
+ * devolve array [perm1, perm2]
+ */
+permission *permConv(char* perms){
+    int atoiPerms = atoi(perms);
+    permission *res = safe_malloc(sizeof(permission)*2, THREAD);
+    res[0] = atoiPerms/10;
+    res[1] = atoiPerms%10;
+    for(int perm=0; perm<2 ;perm++){
+        if(res[perm] & 0b11111100){ //permission is not valid
+            res[perm] = TECNICOFS_ERROR_OTHER;
+        }
+    }
+    return res;
+}
+
 /**
  * HOW TO USE :
- * checkUserPerms(cliente, ficheiro[node]) & CENA_A_TESTAR
+ * checkUserPerms(cliente, ficheiro) & CENA_A_TESTAR
  * 
  * user can write					0b00000001
  * user can read					0b00000010
@@ -309,27 +328,29 @@ int checkUserPerms(client* cliente , node* ficheiro){
 	if(aux<0)
 		return TECNICOFS_ERROR_OTHER;
 	if(cliente->uid==owner){		//user is owner
-		if(ownerPerm&USER_CAN_READ)
-			res |= USER_CAN_READ;
-		if(ownerPerm&USER_CAN_WRITE)
-			res |= USER_CAN_WRITE;
+		if(ownerPerm&READ)
+			res |= READ;
+		if(ownerPerm&WRITE)
+			res |= WRITE;
 	}
 	else{							//user isn't owner
-		if(othersPerm&USER_CAN_READ)
-			res |= USER_CAN_READ;
-		if(othersPerm&USER_CAN_WRITE)
-			res |= USER_CAN_WRITE;
+		if(othersPerm&READ)
+			res |= READ;
+		if(othersPerm&WRITE)
+			res |= WRITE;
 	}
 	for(int i = 0;i<USER_ABERTOS;i++){
-		if(cliente->abertos[i] == -1){
+		if(cliente->ficheiros[i].fd == FILE_CLOSED){
 			res|=ESPACO_AVAILABLE;
 			break;
 		}
 	}
 	for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
 		for(int k = 0;k<USER_ABERTOS;k++){
-			if(clients[i]->abertos[k]==ficheiro->inumber){
-				switch(clients[i]->mode[k]){
+			if(clients[i]->ficheiros[k].fd==ficheiro->inumber){
+				switch(clients[i]->ficheiros[k].mode){
+					case NONE:
+						break;
 					case WRITE:
 						if(self == clients[i]->uid)
 							res|=OPEN_USER_WRITE;
