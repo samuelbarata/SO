@@ -190,6 +190,7 @@ void *newClient(void* cli){
 		}
 	}
 	debug_print("EXIT CLIENT: %02d\n",cliente->socket);
+    sync_destroy(&cliente->lock);
 	free(cliente);
 	return NULL;
 }
@@ -229,6 +230,7 @@ void connections(){
         for(int i = 0; i < USER_ABERTOS; i++){
             cliente->ficheiros[i].fd = FILE_CLOSED;
             cliente->ficheiros[i].mode = NONE;
+            sync_init(&cliente->lock);
         }
 
         

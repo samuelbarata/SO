@@ -275,7 +275,7 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 		sprintf(fileContents, "%d", error_code);
 		return fileContents;
 	}
-	ret = malloc(CODE_SIZE+aux);
+	ret = safe_malloc(CODE_SIZE+aux, THREAD);
 	sprintf(ret, "%d %s", error_code, fileContents);
 	return ret;
 }
@@ -317,14 +317,13 @@ permission *permConv(char* perms){
  * file open for reading by other	0b00100000
  * space to open more files			0b01000000
  */
-int checkUserPerms(client* cliente , node* ficheiro){
+int checkUserPerms(client* cliente , node* ficheiro, int advanced, char* fileContent, int len){
 	uid_t self = cliente->uid;
 	uid_t owner;
 	permission ownerPerm, othersPerm;
-	char* fileContents=NULL;
 	int res=0b00000000, aux = 0b00000000;
 
-	aux = inode_get(ficheiro->inumber,&owner,&ownerPerm,&othersPerm,fileContents,0);
+	aux = inode_get(ficheiro->inumber,&owner,&ownerPerm,&othersPerm,fileContent,0);
 	if(aux<0)
 		return TECNICOFS_ERROR_OTHER;
 	if(cliente->uid==owner){		//user is owner
@@ -342,41 +341,49 @@ int checkUserPerms(client* cliente , node* ficheiro){
 	for(int i = 0;i<USER_ABERTOS;i++){
 		if(cliente->ficheiros[i].fd == FILE_CLOSED){
 			res|=ESPACO_AVAILABLE;
-			break;
+		}
+		else if(cliente->ficheiros[i].fd == ficheiro->inumber){
+			if(cliente->ficheiros[i].mode & READ)
+				res|=OPEN_USER_READ;
+			if(cliente->ficheiros[i].mode & WRITE)
+				res|=OPEN_USER_WRITE;
 		}
 	}
-	for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
-		for(int k = 0;k<USER_ABERTOS;k++){
-			if(clients[i]->ficheiros[k].fd==ficheiro->inumber){
-				switch(clients[i]->ficheiros[k].mode){
-					case NONE:
-						break;
-					case WRITE:
-						if(self == clients[i]->uid)
-							res|=OPEN_USER_WRITE;
-						else
-							res|=OPEN_OTHER_WRITE;
-						break;
-					case READ:
-						if(self == clients[i]->uid)
-							res|=OPEN_USER_READ;
-						else
-							res|=OPEN_OTHER_READ;
-						break;
-					case RW:
-						if(self == clients[i]->uid){
-							res|=OPEN_USER_READ;
-							res|=OPEN_USER_WRITE;
-						}
-						else {
-							res|=OPEN_OTHER_READ;
-							res|=OPEN_OTHER_WRITE;
-						}
-						break;
+	if(advanced)	//verifica quem tem o ficheiro aberto
+		for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
+			for(int k = 0;k<USER_ABERTOS;k++){
+				sync_rdlock(&clients[i]->lock);
+				if(clients[i]->ficheiros[k].fd==ficheiro->inumber){
+					switch(clients[i]->ficheiros[k].mode){
+						case NONE:
+							break;
+						case WRITE:
+							if(self == clients[i]->uid)
+								res|=OPEN_USER_WRITE;
+							else
+								res|=OPEN_OTHER_WRITE;
+							break;
+						case READ:
+							if(self == clients[i]->uid)
+								res|=OPEN_USER_READ;
+							else
+								res|=OPEN_OTHER_READ;
+							break;
+						case RW:
+							if(self == clients[i]->uid){
+								res|=OPEN_USER_READ;
+								res|=OPEN_USER_WRITE;
+							}
+							else {
+								res|=OPEN_OTHER_READ;
+								res|=OPEN_OTHER_WRITE;
+							}
+							break;
+					}
+					continue;	//verifica user seguinte
 				}
-				continue;	//verifica user seguinte
+				sync_unlock(&clients[i]->lock);
 			}
 		}
-	}
 	return res;
 }

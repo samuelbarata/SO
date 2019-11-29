@@ -27,6 +27,6 @@ int closeFile(tecnicofs *fs, char* filename, client* user);
 int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user);
 char* readFromFile(tecnicofs *fs, char* filename, char* len, client* user);
 permission *permConv(char* perms);    //recebe string com permissões; devolve array int [owner, others]
-int checkUserPerms(client* , node*);
+int checkUserPerms(client* , node*, int, char*, int);
 
 #endif /* FS_H */
