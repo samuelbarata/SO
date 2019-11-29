@@ -215,6 +215,7 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 			if(user->abertos[i] == -1){
 				user->abertos[i] = searchNode->inumber;
 				user->mode[i] = mode;
+				error_code = i;
 				break;
 			}
 		}
@@ -271,8 +272,8 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 		sprintf(fileContents, "%d", error_code);
 		return fileContents;
 	}
-	ret = malloc(cmp+CODE_SIZE);
-	sprintf(ret, "%d%s", error_code, fileContents);
+	ret = malloc(CODE_SIZE+aux+1);
+	sprintf(ret, "%d %s", error_code, fileContents);
 	return ret;
 }
 

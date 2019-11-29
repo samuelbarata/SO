@@ -158,27 +158,27 @@ void *newClient(void* cli){
 	printf("socket: %02d\n",cliente->socket);
     
 	int n;
-    char *res;
+	char *res;
 	char line[MAX_INPUT_SIZE];
 
 	while(TRUE){
         bzero(line, MAX_INPUT_SIZE);
         n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
-        if (n == 0)
-            break;
+		if (n == 0)
+			break;
 		else if (n < 0){ //connectionError
 			perror("read from socket");
 			free(cliente);
 			pthread_exit(NULL);
 		}
 		fprintf(stdout,"%s\n",line);
-        fflush(stdout);
+		fflush(stdout);
 		res = applyCommands(line, cliente);
 		n = dprintf(cliente->socket, "%s", res);
-        free(res);
+		free(res);
 		if(n < 0){
 			perror("dprintf");
-            pthread_exit(NULL);
+			pthread_exit(NULL);
 		}
 	}
 	printf("exit: %02d\n",cliente->socket);
