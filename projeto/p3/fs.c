@@ -262,7 +262,7 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	if(user->abertos[fd]==FILE_CLOSED)
 		error_code= TECNICOFS_ERROR_FILE_NOT_OPEN;
 	if(!error_code && !(user->mode[fd]&READ))
-		error_code= TECNICOFS_ERROR_PERMISSION_DENIED;
+		error_code= TECNICOFS_ERROR_INVALID_MODE;
 
 	if(!error_code){
 		aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp-1);
