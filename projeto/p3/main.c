@@ -35,7 +35,6 @@ tecnicofs* fs;
 TIMER_T startTime, stopTime;
 
 
-
 static void displayUsage (const char* appName){
 	fprintf(stderr,"Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
 	exit(EXIT_FAILURE);
@@ -190,6 +189,7 @@ void *newClient(void* cli){
 		}
 	}
 	debug_print("EXIT CLIENT: %02d\n",cliente->socket);
+    sync_destroy(&cliente->lock);
 	free(cliente);
 	return NULL;
 }
@@ -229,6 +229,7 @@ void connections(){
         for(int i = 0; i < USER_ABERTOS; i++){
             cliente->ficheiros[i].fd = FILE_CLOSED;
             cliente->ficheiros[i].mode = NONE;
+            sync_init(&cliente->lock);
         }
 
         

@@ -95,8 +95,8 @@ int delete(tecnicofs* fs, char *name, client *user){
 	if(!(extendedPermissions & WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE ) && !error_code)
-		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+	//if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE ) && !error_code)
+	//	error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
 
 	if(error_code){
 		sync_unlock(&(fs->bstLock[index]));
@@ -126,8 +126,8 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	if(!(extendedPermissions & WRITE) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE) && !error_code)
-		error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
+	//if((extendedPermissions & OPEN_OTHER_READ || extendedPermissions & OPEN_OTHER_WRITE) && !error_code)
+	//	error_code = TECNICOFS_ERROR_FILE_IS_OPEN;
 
 	if(error_code)
 		return error_code;

@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include "tecnicofs-api-constants.h"
+#include "sync.h"
 typedef struct ficheiro{
 	int fd;
 	permission mode;
@@ -33,6 +34,7 @@ typedef struct client{
 	int socket;
 	uid_t uid;
 	ficheiro ficheiros[USER_ABERTOS];
+	syncMech lock;
 } client;
 
 #include <stdio.h>
