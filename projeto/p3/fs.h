@@ -25,7 +25,7 @@ void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
 int openFile(tecnicofs *fs, char* filename,char* mode, client* user); //, client* user
 int closeFile(tecnicofs *fs, char* filename, client* user);
 int writeToFile(tecnicofs *fs, char* filename, char* dataInBuffer, client* user);
-int readFromFile(tecnicofs *fs, char* filename, char* len, client* user);
+char* readFromFile(tecnicofs *fs, char* filename, char* len, client* user);
 int checkUserPerms(client* , node*);
 
 #endif /* FS_H */

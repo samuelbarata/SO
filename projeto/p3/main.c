@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <limits.h>
 
 #include "lib/timer.h"
 #include "lib/inodes.h"
@@ -31,7 +32,7 @@ sem_t canProduce, canRemove;
 FILE* outputFp=NULL;
 
 tecnicofs* fs;
-
+TIMER_T startTime, stopTime;
 
 
 
@@ -70,44 +71,51 @@ FILE * openOutputFile() {
     return fp;
 }
 
-int applyCommands(char* command, client* user){
-        char token;
-        char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
+char* applyCommands(char* command, client* user){
+    char token;
+    char arg1[MAX_INPUT_SIZE]="", arg2[MAX_INPUT_SIZE]="";
+    char *res=NULL;
+    int code=INT_MAX;
 
-        if (command == NULL)
-            return 0;
-        
-        sscanf(command, "%c %s %s", &token, arg1, arg2);
+    if (command == NULL)
+        return 0;
 
-        switch (token) {
-            case 'c':
-                return create(fs, arg1, user, permConv(arg2)); //FIXME: 0: user
-				break;
-            case 'd':
-                return delete(fs, arg1, user);
-                break;
-            case 'r':
-                return reName(fs, arg1, arg2, user); //inumber unittialized
-                break;
-            case 'l':
-				return readFromFile(fs, arg1, arg2, user);
-				break;
-            case 'o':
-                return openFile(fs, arg1, arg2, user);
-                break;
-            case 'x':
-                return closeFile(fs, arg1, user);
-                break;
-            case 'w':
-                return writeToFile(fs, arg1, arg2, user);
-                break;
-                
-            default: { /* error */
-                fprintf(stderr, "Error: could not apply command %c\n", token);  //TODO: devolver erro comando not valid em vez de crashar server
-                exit(EXIT_FAILURE);
-            }
+    sscanf(command, "%c %s %s", &token, arg1, arg2);
+
+    switch (token) {
+        case 'c':
+            code= create(fs, arg1, user, permConv(arg2));
+            break;
+        case 'd':
+            code= delete(fs, arg1, user);
+            break;
+        case 'r':
+            code= reName(fs, arg1, arg2, user);
+            break;
+        case 'l':
+            res= readFromFile(fs, arg1, arg2, user);
+            break;
+        case 'o':
+            code= openFile(fs, arg1, arg2, user);
+            break;
+        case 'x':
+            code= closeFile(fs, arg1, user);
+            break;
+        case 'w':
+            code= writeToFile(fs, arg1, arg2, user);
+            break;
+            
+        default: { /* error */
+            fprintf(stderr, "Error: could not apply command %c\n", token);
+            code= TECNICOFS_ERROR_OTHER;
         }
-    return 0;
+    }
+    if(code == INT_MAX)
+        return res;
+    
+    res = malloc(CODE_SIZE);
+    sprintf(res, "%d", code);
+    return res;
 }
 
 void inits(){ 
@@ -134,6 +142,7 @@ void inits(){
 		perror("server: can't bind local address");
 	
 	listen(sockfd, 5);
+    TIMER_READ(startTime);
 }
 
 
@@ -148,24 +157,28 @@ void *newClient(void* cli){
 	client *cliente = (client*)cli;
 	printf("socket: %02d\n",cliente->socket);
     
-	int n, res;
+	int n;
+	char *res;
 	char line[MAX_INPUT_SIZE];
-	//int error_code=0;
-	//unsigned int error_code_size = sizeof(error_code);
-	while(TRUE) {   //FIXME: check if socket still connected
-		n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
+
+	while(TRUE){
+        bzero(line, MAX_INPUT_SIZE);
+        n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
 		if (n == 0)
 			break;
-		else if (n < 0){
+		else if (n < 0){ //connectionError
 			perror("read from socket");
 			free(cliente);
 			pthread_exit(NULL);
 		}
-		printf("%s\n",line);
+		fprintf(stdout,"%s\n",line);
+		fflush(stdout);
 		res = applyCommands(line, cliente);
-		n = dprintf(cliente->socket, "%d", res);
+		n = dprintf(cliente->socket, "%s", res);
+		free(res);
 		if(n < 0){
 			perror("dprintf");
+			pthread_exit(NULL);
 		}
 	}
 	printf("exit: %02d\n",cliente->socket);
@@ -221,12 +234,16 @@ void connections(){
 void exitServer(){
     int join;
     close(sockfd);      //não deixa receber mais ligações
+    
     for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
         join=pthread_join(workers[i], NULL);
         if(join){
             perror("Can't join thread");
         }
     }
+
+    TIMER_READ(stopTime);
+    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     print_tecnicofs_tree(outputFp, fs);
     fflush(outputFp);
     fclose(outputFp);
