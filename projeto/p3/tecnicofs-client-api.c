@@ -70,22 +70,28 @@ int tfsRead(int fd, char *buffer, int len){
 	char* msg;
 	int res, cmp;
 	msg = malloc(sizeof(char)*(8));
-	res = dprintf(sockfd, "%c %d %d", 'd',fd, len);
+	res = dprintf(sockfd, "%c %d %d", 'l',fd, len);
 	if(res<0)
 		return TECNICOFS_ERROR_OTHER;
 	free(msg);
-	msg = malloc(MAX_INPUT_SIZE+1);
+	msg = malloc(len);
 
-	cmp = read(sockfd, msg, MAX_INPUT_SIZE);
+	cmp = read(sockfd, msg, len);
 	if (cmp<0)
 		return TECNICOFS_ERROR_OTHER;
 	msg[cmp]='\0';
+	
+	if(msg[0]!='0')
+		return atoi(msg);
 
-	strncpy(buffer,msg,len);
+	char*pointer=msg+1;
+	len=strlen(pointer);
+	strncpy(buffer,pointer,len);
 
-	printf("\nread: %s, %d\n",buffer, res);
+	printf("\nread: %s, %d\n",buffer, len);
+	
 	free(msg);
-	return res;
+	return len;
 }
 
 int tfsWrite(int fd, char *buffer, int len){

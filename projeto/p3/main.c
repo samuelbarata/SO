@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <limits.h>
 
 #include "lib/timer.h"
 #include "lib/inodes.h"
@@ -70,9 +71,11 @@ FILE * openOutputFile() {
     return fp;
 }
 
-int applyCommands(char* command, client* user){
+char* applyCommands(char* command, client* user){
     char token;
     char arg1[MAX_INPUT_SIZE]="", arg2[MAX_INPUT_SIZE]="";
+    char *res=NULL;
+    int code=INT_MAX;
 
     if (command == NULL)
         return 0;
@@ -81,33 +84,38 @@ int applyCommands(char* command, client* user){
 
     switch (token) {
         case 'c':
-            return create(fs, arg1, user, permConv(arg2));
+            code= create(fs, arg1, user, permConv(arg2));
             break;
         case 'd':
-            return delete(fs, arg1, user);
+            code= delete(fs, arg1, user);
             break;
         case 'r':
-            return reName(fs, arg1, arg2, user);
+            code= reName(fs, arg1, arg2, user);
             break;
         case 'l':
-            return readFromFile(fs, arg1, arg2, user);
+            res= readFromFile(fs, arg1, arg2, user);
             break;
         case 'o':
-            return openFile(fs, arg1, arg2, user);
+            code= openFile(fs, arg1, arg2, user);
             break;
         case 'x':
-            return closeFile(fs, arg1, user);
+            code= closeFile(fs, arg1, user);
             break;
         case 'w':
-            return writeToFile(fs, arg1, arg2, user);
+            code= writeToFile(fs, arg1, arg2, user);
             break;
             
         default: { /* error */
             fprintf(stderr, "Error: could not apply command %c\n", token);
-            return TECNICOFS_ERROR_OTHER;
+            code= TECNICOFS_ERROR_OTHER;
         }
     }
-    return 0;
+    if(code == INT_MAX)
+        return res;
+    
+    res = malloc(CODE_SIZE);
+    sprintf(res, "%d", code);
+    return res;
 }
 
 void inits(){ 
@@ -149,16 +157,16 @@ void *newClient(void* cli){
 	client *cliente = (client*)cli;
 	printf("socket: %02d\n",cliente->socket);
     
-	int n, res;
+	int n;
+    char *res;
 	char line[MAX_INPUT_SIZE];
-	/*
-    */
+
 	while(TRUE){
         bzero(line, MAX_INPUT_SIZE);
         n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
         if (n == 0)
             break;
-		else if (n < 0){
+		else if (n < 0){ //connectionError
 			perror("read from socket");
 			free(cliente);
 			pthread_exit(NULL);
@@ -166,9 +174,11 @@ void *newClient(void* cli){
 		fprintf(stdout,"%s\n",line);
         fflush(stdout);
 		res = applyCommands(line, cliente);
-		n = dprintf(cliente->socket, "%d", res);
+		n = dprintf(cliente->socket, "%s", res);
+        free(res);
 		if(n < 0){
 			perror("dprintf");
+            pthread_exit(NULL);
 		}
 	}
 	printf("exit: %02d\n",cliente->socket);

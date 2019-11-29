@@ -247,28 +247,33 @@ int writeToFile(tecnicofs *fs, char* fdstr, char* dataInBuffer, client* user){
 	return 0;
 }
 
-int readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
+char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	int error_code = 0, aux;
 	int fd = atoi(fdstr);
 	uid_t owner;
 	permission ownerPerm, othersPerm;
-	char* fileContents=NULL;
 	int cmp = atoi(len);
-
-	if(user->abertos[fd]==FILE_CLOSED)
-		return TECNICOFS_ERROR_FILE_NOT_OPEN;
-	if(!(user->mode[fd]&READ))
-		return TECNICOFS_ERROR_PERMISSION_DENIED;
-
-	aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp);
-	if(aux<0||aux!=cmp)
-		error_code = TECNICOFS_ERROR_OTHER;
+	char *fileContents=malloc(cmp), *ret;
+	bzero(fileContents, cmp);
 	
+	if(user->abertos[fd]==FILE_CLOSED)
+		error_code= TECNICOFS_ERROR_FILE_NOT_OPEN;
+	if(!error_code && !(user->mode[fd]&READ))
+		error_code= TECNICOFS_ERROR_PERMISSION_DENIED;
+
 	if(!error_code){
-		if(write(user->socket,fileContents,cmp)!=cmp)
+		aux = inode_get(user->abertos[fd],&owner,&ownerPerm,&othersPerm,fileContents,cmp);
+
+		if(aux<0)
 			error_code = TECNICOFS_ERROR_OTHER;
 	}
-	return error_code;
+	if(error_code){
+		sprintf(fileContents, "%d", error_code);
+		return fileContents;
+	}
+	ret = malloc(cmp+CODE_SIZE);
+	sprintf(ret, "%d%s", error_code, fileContents);
+	return ret;
 }
 
 

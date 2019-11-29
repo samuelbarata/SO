@@ -3,15 +3,15 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define USER_ABERTOS 5
-#define FILE_CLOSED -1
-#define MAX_CLIENTS 100
-#define ARRAY_SIZE 10
-#define MAX_INPUT_SIZE 1024
-#define DELAY 5000
-#define FALSE 0
-#define TRUE 1
-#define MINGUA_CONSTANT 0.0001
+#define USER_ABERTOS		5
+#define FILE_CLOSED 		-1
+#define MAX_CLIENTS			100
+#define MAX_INPUT_SIZE		1024
+#define DELAY				5000
+#define FALSE				0
+#define TRUE				1
+#define MINGUA_CONSTANT 	0.0001
+#define CODE_SIZE			5
 
 #define USER_CAN_READ		0b00000001
 #define USER_CAN_WRITE		0b00000010
