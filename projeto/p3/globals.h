@@ -11,7 +11,7 @@
 #define FALSE				0
 #define TRUE				1
 #define MINGUA_CONSTANT 	0.0001
-#define CODE_SIZE			3			//maior codigo == -11
+#define CODE_SIZE			4			//maior codigo == "-11\0"
 
 #define USER_CAN_READ		0b00000001
 #define USER_CAN_WRITE		0b00000010
@@ -30,5 +30,18 @@ typedef struct client{
 	int abertos[USER_ABERTOS];
 	int mode[USER_ABERTOS];
 } client;
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#ifdef DEBUG
+	#define DEBUG_TEST 1
+#else
+	#define DEBUG_TEST 0
+#endif
+
+//debug print
+#define debug_print(fmt, ...) do { if (DEBUG_TEST) fprintf(stdout, fmt, __VA_ARGS__);fflush(stdout);} while (0)
 
 #endif /* CONSTANTS_H */
