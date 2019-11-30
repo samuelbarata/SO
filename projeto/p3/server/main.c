@@ -1,5 +1,8 @@
-#define _GNU_SOURCE
-#include "globals.h"
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+#endif
+
+#include "../globals.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,11 +14,11 @@
 #include <sys/un.h>
 #include <limits.h>
 
-#include "lib/safe.h"
-#include "lib/timer.h"
-#include "lib/inodes.h"
+#include "../lib/safe.h"
+#include "../lib/timer.h"
+#include "../lib/inodes.h"
 #include "fs.h"
-#include "sync.h"
+#include "../lib/sync.h"
 
 char* global_SocketName = NULL;
 char* global_outputFile = NULL;
@@ -85,34 +88,59 @@ char* applyCommands(char* command, client* user){
         return res;
     }
 
-    switch (token) {
-        case 'c':
-            code= create(fs, arg1, user, permConv(arg2));
-            break;
-        case 'd':
-            code= delete(fs, arg1, user);
-            break;
+    switch(token){  //verificação erro comandos
         case 'r':
-            code= reName(fs, arg1, arg2, user);
-            break;
         case 'l':
-            res= readFromFile(fs, arg1, arg2, user);
-            break;
         case 'o':
-            code= openFile(fs, arg1, arg2, user);
-            break;
-        case 'x':
-            code= closeFile(fs, arg1, user);
-            break;
         case 'w':
-            code= writeToFile(fs, arg1, arg2, user);
+            if(!strcmp(arg2, "")){
+                fprintf(stderr,"Error: could not apply command %c\n", token);
+                code= TECNICOFS_ERROR_OTHER;
+            }
+        case 'c':
+        case 'x':
+        case 'd':
+            if(!strcmp(arg1, "")){
+                fprintf(stderr,"Error: could not apply command %c\n", token);
+                code= TECNICOFS_ERROR_OTHER;
+            }
             break;
-            
         default: { /* error */
             fprintf(stderr,"Error: could not apply command %c\n", token);
             code= TECNICOFS_ERROR_OTHER;
         }
     }
+
+    if(code == INT_MAX)
+        switch (token) {
+            case 'c':
+                code= create(fs, arg1, user, permConv(arg2));
+                break;
+            case 'd':
+                code= delete(fs, arg1, user);
+                break;
+            case 'r':
+                code= reName(fs, arg1, arg2, user);
+                break;
+            case 'l':
+                res= readFromFile(fs, arg1, arg2, user);
+                break;
+            case 'o':
+                code= openFile(fs, arg1, arg2, user);
+                break;
+            case 'x':
+                code= closeFile(fs, arg1, user);
+                break;
+            case 'w':
+                code= writeToFile(fs, arg1, arg2, user);
+                break;
+                
+            default: { /* error */
+                fprintf(stderr,"Error: could not apply command %c\n", token);
+                code= TECNICOFS_ERROR_OTHER;
+            }
+        }
+
     if(code == INT_MAX)
         return res;
     
@@ -133,10 +161,7 @@ void inits(){
     srand(time(NULL));
 
     /* Cria socket stream */
-	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
-		perror("server: can't open stream socket");
-		exit(EXIT_FAILURE);
-	}
+	sockfd = safe_socket(AF_UNIX, SOCK_STREAM, 0);
 
     /*Elimina o nome, para o caso de já existir.*/
 	unlink(global_SocketName);
@@ -145,8 +170,7 @@ void inits(){
 	serv_addr.sun_family = AF_UNIX;
 	strcpy(serv_addr.sun_path, global_SocketName);
 	servlen = strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
-	if (bind(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
-		perror("server: can't bind local address");
+	safe_bind(sockfd, (struct sockaddr*) &serv_addr, servlen);
 	
 	listen(sockfd, 5);
     TIMER_READ(startTime);
@@ -154,12 +178,10 @@ void inits(){
 
 
 void *newClient(void* cli){
-	if(pthread_sigmask(SIG_SETMASK, &set, NULL)){
-		perror("sig_mask: Failure");
-		pthread_exit(NULL);
-	}
+	safe_sigmask(SIG_SETMASK, &set, NULL);
+
 	client *cliente = (client*)cli;
-	debug_print("NEW CONNECTION: %02d\n",cliente->socket);
+	debug_print("NEW CONNECTION: %02d:%d\n",cliente->socket, cliente->uid);
     
 	int n;
 	char *res;
@@ -170,12 +192,11 @@ void *newClient(void* cli){
         n = recv(cliente->socket, line, MAX_INPUT_SIZE, 0);
 		if (n == 0)
 			break;
-		else if (n < 0){ //connectionError
+		else if (n < 0){ //Error
 			perror("read from socket");
-			free(cliente);
-			pthread_exit(NULL);
+			break;
 		}
-		debug_print("%d: %s",cliente->socket, line);
+		debug_print("%02d:%d: %s",cliente->socket,cliente->uid, line);
 
 		fflush(stdout);
 		res = applyCommands(line, cliente);
@@ -184,18 +205,19 @@ void *newClient(void* cli){
 
 		n = dprintf(cliente->socket, "%s", res);
 		free(res);
-		if(n < 0){
+		if(n < 0){ //Error
 			perror("dprintf");
-			pthread_exit(NULL);
+			break;
 		}
 	}
-	debug_print("EXIT CLIENT: %02d\n",cliente->socket);
+	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
+    sync_destroy(&cliente->lock);
 	free(cliente);
 	return NULL;
 }
 
 void connections(){
-    int nClients=0, err;
+    int nClients=0;
     unsigned int ucred_len;
 
     struct ucred ucreds;
@@ -207,46 +229,40 @@ void connections(){
     for(;;){
 		clilen = sizeof(cli_addr);
 		if(nClients>=MAX_CLIENTS){
-			fprintf(stdout, "max client number reached");
+			fprintf(stderr, "max client number reached");
 			raise(SIGINT);
 		}
-		newsockfd = accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
-		if(newsockfd < 0)
-			perror("server: accept error");
+		newsockfd = safe_accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
 
-        cliente = malloc(sizeof(client));
+        cliente = safe_malloc(sizeof(client), THREAD);
         nClients++;
 
 		ucred_len = sizeof(struct ucred);
         if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
 			perror("cant get client uid");
+            close(newsockfd);
 			free(cliente);
 			continue;
 		}
         cliente->socket=newsockfd;
         cliente->uid=ucreds.uid;
 
-        for(int i = 0; i < USER_ABERTOS; i++){
+        for(int i = 0; i < MAX_OPEN_FILES; i++){
             cliente->ficheiros[i].fd = FILE_CLOSED;
             cliente->ficheiros[i].mode = NONE;
+            sync_init(&cliente->lock);
+            cliente->ficheiros[i].key=NULL;
         }
 
-        
 		clients[nClients-1]=cliente;
+        safe_pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
 
-        err = pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
-        if (err){
-            perror("Can't create thread");
-            exit(EXIT_FAILURE);
-        }
 	}
 }
 
 void exitServer(){
-	pthread_sigmask(SIG_SETMASK, &set, NULL);
-
     int join;
-    fprintf(stdout, "\b\bExitting Server...");
+    debug_print("\b\bExitting Server...");
     close(sockfd);      //não deixa receber mais ligações
     
     for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
@@ -257,13 +273,13 @@ void exitServer(){
     }
 
     TIMER_READ(stopTime);
-    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     print_tecnicofs_tree(outputFp, fs);
+    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     fflush(outputFp);
     fclose(outputFp);
-
     free_tecnicofs(fs);
 
+    debug_print("%sServer Exited.%s\n", "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", "    ");
     exit(EXIT_SUCCESS);
 }
 
@@ -277,5 +293,5 @@ int main(int argc, char* argv[]) {
     inits();
     connections();
 
-    exit(EXIT_SUCCESS); //nunca usado
+    exit(EXIT_FAILURE);
 }

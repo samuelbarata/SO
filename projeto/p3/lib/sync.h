@@ -6,7 +6,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include "globals.h"
 
 #ifdef RWLOCK
     #define SYNC

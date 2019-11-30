@@ -1,5 +1,5 @@
 #include "../tecnicofs-api-constants.h"
-#include "../tecnicofs-client-api.h"
+#include "../client/tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -19,10 +19,6 @@ int main(int argc, char** argv) {
     assert(tfsCreate("a", RW, READ) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);
     assert(tfsUnmount() == 0);
     printf("SUCCESS\n\n");
-    
-    char command[100]="./client-api-test-delete.sh ";
-    strcat(command, argv[1]);
-    system(command);
 
     return 0;
 }
