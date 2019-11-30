@@ -95,7 +95,12 @@ int delete(tecnicofs* fs, char *name, client *user){
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 	}
 
-	/*
+	if(!(checker & OPEN_ANY))
+		inode_delete(searchNode->inumber);
+	
+	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
+	sync_unlock(&(fs->bstLock[index]));
+
 	if(checker & OPEN_USER){		//fecha o ficheiro se estiver aberto pelo utilizador
 		int i;
 		char tmp[2]="";
@@ -104,13 +109,9 @@ int delete(tecnicofs* fs, char *name, client *user){
 				break;
 		sprintf(tmp,"%d",i);
 		closeFile(fs,tmp,user);
-	}*/
+	}
 
-	if(!(checker & OPEN_ANY))
-		inode_delete(searchNode->inumber);
-	
-	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
-	sync_unlock(&(fs->bstLock[index]));
+
 	return error_code;
 }
 
