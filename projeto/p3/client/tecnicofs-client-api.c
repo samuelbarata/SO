@@ -136,7 +136,7 @@ int sendMsg(char* msg, char* res, int len){
 	if(err!=n)
 		return TECNICOFS_ERROR_OTHER;
 	
-	debug_print("%s ", msg);
+	debug_print("%s", msg);
 
 	/* Tenta ler string de sockfd.*/
 	if(res)
@@ -149,7 +149,7 @@ int sendMsg(char* msg, char* res, int len){
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
 		return TECNICOFS_ERROR_OTHER;
-	debug_print("%s\n", recvline);
+	debug_print("\t\t%s\n", recvline);
 	sscanf(recvline, "%d %s", &n, res);
 	free(recvline);
 	return n;

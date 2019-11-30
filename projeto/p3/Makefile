@@ -13,9 +13,9 @@ CFLAGS	=-Wall -std=gnu99 -I../ -g
 LDFLAGS	=-lm -pthread
 TARGETS	= tecnicofs-rwlock
 API 	= client/tecnicofs-client-api.o
-CLIENTS	= client-api-test-create client-api-test-delete client-api-test-read client-api-test-success
+CLIENTS	= client-api-test-create client-api-test-delete client-api-test-read client-api-test-success client-killer
 
-.PHONY: all clean debug runs runc cleaner clients
+.PHONY: all clean debug runs runc cleaner clients zip
 
 all: $(TARGETS) $(API)
 clients: $(CLIENTS) $(API)
@@ -54,18 +54,17 @@ client-api-test-create: api-tests/client-api-test-create.c
 client-api-test-delete: api-tests/client-api-test-delete.c
 client-api-test-read: api-tests/client-api-test-read.c
 client-api-test-success: api-tests/client-api-test-success.c
+client-killer: api-tests/client-killer.c
 
 %.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
 	@echo Cleaning...
-	rm -f $(OBJS) $(TARGETS)
-
-cleaner: 
-	@echo Cleaning...
 	rm -f $(OBJS) $(TARGETS) $(CLIENTS) $(API)
-	@rm -f *.out core inputs/*.out .gdb_history *.o 
+
+cleaner: clean
+	@rm -f *.out core inputs/*.out .gdb_history *.o proj.zip
 	@rm -f -r output/
 	@clear
 
@@ -73,10 +72,14 @@ runs: $(TARGETS)
 	./tecnicofs-rwlock /tmp/mySocket myout.out 2
 
 runc: $(API) $(CLIENTS)
-	./client-api-test-create /tmp/mySocket
-	./client-api-test-delete /tmp/mySocket
-	./client-api-test-read /tmp/mySocket
-	./client-api-test-success /tmp/mySocket
+	#./client-api-test-create /tmp/mySocket
+	#./client-api-test-delete /tmp/mySocket
+	#./client-api-test-read /tmp/mySocket
+	#./client-api-test-success /tmp/mySocket
+	./client-killer /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
 debug: clean all $(CLIENTS)
+
+zip: clean
+	zip proj.zip *.c *.h lib/*.c lib/*.h client/*.c client/*.h server/*.c server/*.h Makefile

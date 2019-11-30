@@ -19,6 +19,5 @@ int main(int argc, char** argv) {
     assert(tfsCreate("a", RW, READ) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);
     assert(tfsUnmount() == 0);
     printf("SUCCESS\n\n");
-
     return 0;
 }
