@@ -67,7 +67,10 @@ runs: all
 
 runc: client-api-test-create.sh client-api-test-delete.sh client-api-test-read.sh client-api-test-success.sh
 	./client-api-test-create.sh /tmp/mySocket
+	./client-api-test-delete.sh /tmp/mySocket
+	./client-api-test-read.sh /tmp/mySocket
+	./client-api-test-success.sh /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
 debug: clean all
-	
+	@echo 'use "make runs" to start the server and "make runc" to start the clients'
