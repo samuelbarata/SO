@@ -11,17 +11,11 @@
 client* clients[MAX_CLIENTS];      //array clients
 
 tecnicofs* new_tecnicofs(){
-	tecnicofs*fs = malloc(sizeof(tecnicofs));
-	if (!fs) {
-		perror("failed to allocate tecnicofs");
-		exit(EXIT_FAILURE);
-	}
-	fs->bstRoot = malloc(sizeof(node*)*numberBuckets);
-	fs->bstLock = malloc(sizeof(syncMech)*numberBuckets);
-	if (!fs->bstRoot || !fs->bstLock){
-		perror("failed to allocate tecnicofs");
-		exit(EXIT_FAILURE);
-	}
+	tecnicofs*fs = safe_malloc(sizeof(tecnicofs), MAIN);
+
+	fs->bstRoot = safe_malloc(sizeof(node*)*numberBuckets, MAIN);
+	fs->bstLock = safe_malloc(sizeof(syncMech)*numberBuckets, MAIN);
+
 	for (int index = 0; index<numberBuckets; index++){
 		fs->bstRoot[index] = NULL;
 		sync_init(&(fs->bstLock[index]));
@@ -305,7 +299,7 @@ int writeToFile(tecnicofs *fs, char* fdstr, char* dataInBuffer, client* user){
 char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	int fd = atoi(fdstr), error_code = 0;
 	int cmp = atoi(len);
-	char *fileContents=malloc(cmp), *ret;
+	char *fileContents=safe_malloc(cmp, THREAD), *ret;
 	bzero(fileContents, cmp);
 	int aux = checkUserPerms(user, user->ficheiros[fd].fd, TRUE, fileContents, cmp-1);
 

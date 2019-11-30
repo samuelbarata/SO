@@ -86,7 +86,7 @@ int tfsRead(int fd, char *buffer, int len){
 int tfsWrite(int fd, char *buffer, int len){
 	char* msg;
 	int res;
-	msg = malloc(sizeof(char)*(6));
+	msg = safe_malloc(sizeof(char)*(6), MAIN);
 	sprintf(msg, "%c %d %s", 'w', fd, buffer);
 	res = sendMsg(msg, NULL, 0);
 	free(msg);
@@ -144,7 +144,7 @@ int sendMsg(char* msg, char* res, int len){
 	else
 		len=MAX_INPUT_SIZE;
 
-	recvline = malloc(len);
+	recvline = safe_malloc(len, MAIN);
 	bzero(recvline, MAX_INPUT_SIZE);
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
 	if (n<0)
