@@ -37,7 +37,7 @@ fs-rwlock.o: fs.c fs.h lib/bst.h lib/hash.h
 sync-rwlock.o: CFLAGS+=-DRWLOCK
 sync-rwlock.o: sync.c sync.h globals.h
 
-tecnicofs-client-api.o: tecnicofs-client-api.c tecnicofs-client-api.h tecnicofs-api-constants.h 
+tecnicofs-client-api.o: tecnicofs-client-api.c tecnicofs-client-api.h tecnicofs-api-constants.h lib/safe.h
 
 client-api-test-create.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c lib/safe.o
 client-api-test-delete.sh: tecnicofs-client-api.o api-tests/client-api-test-delete.c lib/safe.o
@@ -45,7 +45,7 @@ client-api-test-read.sh: tecnicofs-client-api.o api-tests/client-api-test-read.c
 client-api-test-success.sh: tecnicofs-client-api.o api-tests/client-api-test-success.c lib/safe.o
 
 main-rwlock.o: CFLAGS+=-DRWLOCK
-main-rwlock.o: main.c fs.h lib/safe.h lib/bst.h globals.h lib/timer.h sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h tecnicofs-client-api.h
+main-rwlock.o: main.c fs.h lib/safe.h lib/bst.h globals.h lib/timer.h sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h
 tecnicofs-rwlock: lib/safe.o lib/bst-rwlock.o fs-rwlock.o sync-rwlock.o main-rwlock.o lib/hash.o lib/inodes.o
 
 %.o:
