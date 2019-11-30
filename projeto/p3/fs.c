@@ -41,6 +41,9 @@ void free_tecnicofs(tecnicofs* fs){
 	free(fs);	
 }
 
+/**
+ * cria um ficheiro no fs
+*/
 int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	int index = hash(name, numberBuckets);
 	int error_code = 0;
@@ -74,6 +77,11 @@ int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	return 0;
 }
 
+/**
+ * Apaga um ficheiro do fs
+ * Se o ficherio estiver aberto pelo utilizador; é fechado
+ * inode apenas é apagado quando mais ninguem tiver o ficheiro aberto
+*/
 int delete(tecnicofs* fs, char *name, client *user){
 	int index = hash(name, numberBuckets);
 	int error_code = 0, checker=0;
@@ -95,26 +103,32 @@ int delete(tecnicofs* fs, char *name, client *user){
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 	}
 
-	if(!(checker & OPEN_ANY))
+	if(checker & OPEN_USER){		//fecha o ficheiro se estiver aberto pelo utilizador
+		int i;
+		sync_wrlock(&user->lock);
+		for(i = 0; i<MAX_OPEN_FILES; i++)
+			if(user->ficheiros[i].fd == searchNode->inumber)
+				break;
+		user->ficheiros[i].fd = FILE_CLOSED;
+		user->ficheiros[i].mode = NONE;
+		free(user->ficheiros[i].key);
+		user->ficheiros[i].key=NULL;
+		sync_unlock(&user->lock);	
+	}
+
+	if(!(checker & OPEN_OTHER))
 		inode_delete(searchNode->inumber);
 	
 	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
 	sync_unlock(&(fs->bstLock[index]));
-
-	if(checker & OPEN_USER){		//fecha o ficheiro se estiver aberto pelo utilizador
-		int i;
-		char tmp[2]="";
-		for(i = 0; i<MAX_OPEN_FILES; i++)
-			if(user->ficheiros[i].fd == searchNode->inumber)
-				break;
-		sprintf(tmp,"%d",i);
-		closeFile(fs,tmp,user);
-	}
-
-
 	return error_code;
 }
 
+/**
+ * Muda o nome de um ficheiro
+ * Se o ficheiro estiver aberto pelo utilizador; o nome é trocado também
+ * Para outros utilizadores com o ficheiro aberto -> FILE_NOT_FOUND
+ */
 int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
@@ -129,7 +143,7 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 		extendedPermissions = checkUserPerms(user , searchNode->inumber,0,NULL,0);
 
 	sync_unlock(&(fs->bstLock[index0]));
-	if(!(extendedPermissions & WRITE) && !error_code)
+	if(!(extendedPermissions & USER_IS_OWNER) && !error_code)
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(error_code)
@@ -159,6 +173,15 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
 	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
 	
+	if(extendedPermissions&OPEN_USER){	//altera nome ficheiro aberto
+		int i;
+		for(i=0;i<MAX_OPEN_FILES;i++)
+			if(user->ficheiros[i].fd == inumber)
+				break;
+		free(user->ficheiros[i].key);
+		user->ficheiros[i].key=safe_strdup(newName, THREAD);
+	}
+
 	sync_unlock(&(fs->bstLock[index1]));
 	if(index0!=index1)
 		sync_unlock(&(fs->bstLock[index0]));
