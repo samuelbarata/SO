@@ -3,23 +3,30 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define USER_ABERTOS		5
-#define FILE_CLOSED 		-1
-#define MAX_CLIENTS			100
-#define MAX_INPUT_SIZE		1024
-#define DELAY				5000
 #define FALSE				0
 #define TRUE				1
+
+#define MAX_OPEN_FILES		5
+#define MAX_CLIENTS			100
+#define MAX_INPUT_SIZE		1024
+
+#define FILE_CLOSED 		-1
+#define DELAY				5000
 #define MINGUA_CONSTANT 	0.0001
 #define CODE_SIZE			4			//maior codigo == "-11\0"
 
-//#define USER_CAN_READ		0b00000001
-//#define USER_CAN_WRITE		0b00000010
-#define OPEN_USER_READ		0b00000100
-#define OPEN_USER_WRITE		0b00001000
-#define	OPEN_OTHER_READ		0b00010000
-#define OPEN_OTHER_WRITE	0b00100000
-#define ESPACO_AVAILABLE	0b01000000
+//#define USER_CAN_READ		0b000000001
+//#define USER_CAN_WRITE	0b000000010
+
+#define OPEN_USER_READ		0b000000100
+#define OPEN_USER_WRITE		0b000001000
+#define	OPEN_OTHER_READ		0b000010000
+#define OPEN_OTHER_WRITE	0b000100000
+#define ESPACO_AVAILABLE	0b001000000
+#define USER_IS_OWNER		0b010000000
+#define OPEN_USER			OPEN_USER_READ | OPEN_USER_WRITE
+#define OPEN_OTHER			OPEN_OTHER_READ | OPEN_OTHER_WRITE
+#define OPEN_ANY			OPEN_USER | OPEN_OTHER
 
 #include <sys/types.h>
 #include <stdlib.h>
@@ -27,6 +34,7 @@
 #include "sync.h"
 
 typedef struct ficheiro{
+	char* key;
 	int fd;
 	permission mode;
 } ficheiro;
@@ -34,7 +42,7 @@ typedef struct ficheiro{
 typedef struct client{
 	int socket;
 	uid_t uid;
-	ficheiro ficheiros[USER_ABERTOS];
+	ficheiro ficheiros[MAX_OPEN_FILES];
 	syncMech lock;
 } client;
 

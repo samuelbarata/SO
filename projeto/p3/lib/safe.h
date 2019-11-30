@@ -7,8 +7,10 @@
 #include <signal.h>
 #include <pthread.h>
 
-typedef enum origin { MAIN, THREAD} origin;
+typedef enum origin {MAIN, THREAD} origin;
 
+void terminate(origin _origin);
 void *safe_malloc(size_t __size, origin _origin);
+void *safe_strdup(const char *__s1, origin _origin);
 
 #endif
