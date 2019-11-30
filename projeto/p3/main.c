@@ -231,6 +231,7 @@ void connections(){
             cliente->ficheiros[i].fd = FILE_CLOSED;
             cliente->ficheiros[i].mode = NONE;
             sync_init(&cliente->lock);
+            cliente->ficheiros[i].key=NULL;
         }
 
         
