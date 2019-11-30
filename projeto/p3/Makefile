@@ -1,52 +1,59 @@
 # Makefile, versao 2.1
 # Sistemas Operativos, DEI/IST/ULisboa 2019-20
 
-SOURCES = main.c fs.c sync.c tecnicofs-client-api.c
-SOURCES+= lib/bst.c lib/hash.c lib/inodes.c lib/safe.c
+SOURCES = server/main.c server/fs.c client/tecnicofs-client-api.c
+SOURCES+= lib/bst.c lib/hash.c lib/inodes.c lib/safe.c lib/sync.c
 OBJS_NOSYNC = $(SOURCES:%.c=%.o)
 OBJS_MUTEX  = $(SOURCES:%.c=%-mutex.o)
 OBJS_RWLOCK = $(SOURCES:%.c=%-rwlock.o)
 OBJS = $(OBJS_NOSYNC) $(OBJS_MUTEX) $(OBJS_RWLOCK)
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -std=gnu99 -I../ -g
-LDFLAGS=-lm -pthread
-TARGETS = tecnicofs-rwlock client-api-test-create.sh client-api-test-delete.sh client-api-test-read.sh client-api-test-success.sh
+CFLAGS	=-Wall -std=gnu99 -I../ -g
+LDFLAGS	=-lm -pthread
+TARGETS	= tecnicofs-rwlock
+API 	= client/tecnicofs-client-api.o
+CLIENTS	= client-api-test-create client-api-test-delete client-api-test-read client-api-test-success
 
-.PHONY: all clean
+.PHONY: all clean debug runs runc cleaner clients
 
-all: $(TARGETS)
-
+all: $(TARGETS) $(API)
+clients: $(CLIENTS) $(API)
 
 $(TARGETS):
 	$(LD) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
+$(CLIENTS): lib/safe.o $(API)
+	$(LD) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+$(API):
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 
 lib/safe.o: lib/safe.c lib/safe.h
-
 lib/hash.o: lib/hash.c lib/hash.h
-
 lib/inodes.o: lib/inodes.c lib/inodes.h
 
 lib/bst-rwlock.o: CFLAGS+=-DRWLOCK
 lib/bst-rwlock.o: lib/bst.c lib/bst.h
 
-fs-rwlock.o: CFLAGS+=-DRWLOCK
-fs-rwlock.o: fs.c fs.h lib/bst.h lib/hash.h
+server/fs-rwlock.o: CFLAGS+=-DRWLOCK
+server/fs-rwlock.o: server/fs.c server/fs.h lib/bst.h lib/hash.h
 
-sync-rwlock.o: CFLAGS+=-DRWLOCK
-sync-rwlock.o: sync.c sync.h globals.h
+lib/sync-rwlock.o: CFLAGS+=-DRWLOCK
+lib/sync-rwlock.o: lib/sync.c lib/sync.h globals.h
 
-tecnicofs-client-api.o: tecnicofs-client-api.c tecnicofs-client-api.h tecnicofs-api-constants.h lib/safe.h
+server/main-rwlock.o: CFLAGS+=-DRWLOCK
+server/main-rwlock.o: server/main.c server/fs.h lib/safe.h lib/bst.h globals.h lib/timer.h lib/sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h
 
-client-api-test-create.sh: tecnicofs-client-api.o api-tests/client-api-test-create.c lib/safe.o
-client-api-test-delete.sh: tecnicofs-client-api.o api-tests/client-api-test-delete.c lib/safe.o
-client-api-test-read.sh: tecnicofs-client-api.o api-tests/client-api-test-read.c lib/safe.o
-client-api-test-success.sh: tecnicofs-client-api.o api-tests/client-api-test-success.c lib/safe.o
+tecnicofs-rwlock: lib/safe.o lib/bst-rwlock.o server/fs-rwlock.o lib/sync-rwlock.o server/main-rwlock.o lib/hash.o lib/inodes.o
 
-main-rwlock.o: CFLAGS+=-DRWLOCK
-main-rwlock.o: main.c fs.h lib/safe.h lib/bst.h globals.h lib/timer.h sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h
-tecnicofs-rwlock: lib/safe.o lib/bst-rwlock.o fs-rwlock.o sync-rwlock.o main-rwlock.o lib/hash.o lib/inodes.o
+client/tecnicofs-client-api.o: client/tecnicofs-client-api.c globals.h lib/safe.h client/tecnicofs-client-api.h tecnicofs-api-constants.h
+
+client-api-test-create: api-tests/client-api-test-create.c
+client-api-test-delete: api-tests/client-api-test-delete.c
+client-api-test-read: api-tests/client-api-test-read.c
+client-api-test-success: api-tests/client-api-test-success.c
 
 %.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -57,20 +64,19 @@ clean:
 
 cleaner: 
 	@echo Cleaning...
-	rm -f $(OBJS) $(TARGETS)
-	@rm -f *.out core inputs/*.out .gdb_history *.o
+	rm -f $(OBJS) $(TARGETS) $(CLIENTS) $(API)
+	@rm -f *.out core inputs/*.out .gdb_history *.o 
 	@rm -f -r output/
 	@clear
 
-runs: all
+runs: $(TARGETS)
 	./tecnicofs-rwlock /tmp/mySocket myout.out 2
 
-runc: client-api-test-create.sh client-api-test-delete.sh client-api-test-read.sh client-api-test-success.sh
-	./client-api-test-create.sh /tmp/mySocket
-	./client-api-test-delete.sh /tmp/mySocket
-	./client-api-test-read.sh /tmp/mySocket
-	./client-api-test-success.sh /tmp/mySocket
+runc: $(API) $(CLIENTS)
+	./client-api-test-create /tmp/mySocket
+	./client-api-test-delete /tmp/mySocket
+	./client-api-test-read /tmp/mySocket
+	./client-api-test-success /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
-debug: clean all
-	@echo 'use "make runs" to start the server and "make runc" to start the clients'
+debug: clean all $(CLIENTS)

@@ -15,8 +15,8 @@
 #define MINGUA_CONSTANT 	0.0001
 #define CODE_SIZE			4			//maior codigo == "-11\0"
 
-//#define USER_CAN_READ		0b000000001
-//#define USER_CAN_WRITE	0b000000010
+//#define READ				0b000000001
+//#define WRITE				0b000000010
 
 #define OPEN_USER_READ		0b000000100
 #define OPEN_USER_WRITE		0b000001000
@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include "tecnicofs-api-constants.h"
-#include "sync.h"
+#include "lib/sync.h"
 
 typedef struct ficheiro{
 	char* key;

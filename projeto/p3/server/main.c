@@ -2,7 +2,7 @@
     #define _GNU_SOURCE
 #endif
 
-#include "globals.h"
+#include "../globals.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,11 +14,11 @@
 #include <sys/un.h>
 #include <limits.h>
 
-#include "lib/safe.h"
-#include "lib/timer.h"
-#include "lib/inodes.h"
+#include "../lib/safe.h"
+#include "../lib/timer.h"
+#include "../lib/inodes.h"
 #include "fs.h"
-#include "sync.h"
+#include "../lib/sync.h"
 
 char* global_SocketName = NULL;
 char* global_outputFile = NULL;

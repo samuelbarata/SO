@@ -1,12 +1,12 @@
 #include "fs.h"
-#include "lib/safe.h"
-#include "lib/bst.h"
+#include "../lib/safe.h"
+#include "../lib/bst.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "sync.h"
-#include "lib/hash.h"
-#include "lib/inodes.h"
+#include "../lib/sync.h"
+#include "../lib/hash.h"
+#include "../lib/inodes.h"
 
 client* clients[MAX_CLIENTS];      //array clients
 

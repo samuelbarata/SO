@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
-#include "globals.h"
-#include "lib/safe.h"
+#include "../globals.h"
+#include "../lib/safe.h"
 
 int sockfd=-1;
 int sendMsg(char* msg, char* res, int len);
