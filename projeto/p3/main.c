@@ -159,7 +159,7 @@ void *newClient(void* cli){
 		pthread_exit(NULL);
 	}
 	client *cliente = (client*)cli;
-	debug_print("NEW CONNECTION: %02d\n",cliente->socket);
+	debug_print("NEW CONNECTION: %02d:%d\n",cliente->socket, cliente->uid);
     
 	int n;
 	char *res;
@@ -175,7 +175,7 @@ void *newClient(void* cli){
 			free(cliente);
 			pthread_exit(NULL);
 		}
-		debug_print("%d: %s",cliente->socket, line);
+		debug_print("%02d:%d: %s",cliente->socket,cliente->uid, line);
 
 		fflush(stdout);
 		res = applyCommands(line, cliente);
@@ -189,7 +189,7 @@ void *newClient(void* cli){
 			pthread_exit(NULL);
 		}
 	}
-	debug_print("EXIT CLIENT: %02d\n",cliente->socket);
+	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
     sync_destroy(&cliente->lock);
 	free(cliente);
 	return NULL;
@@ -248,7 +248,7 @@ void exitServer(){
 	pthread_sigmask(SIG_SETMASK, &set, NULL);
 
     int join;
-    fprintf(stdout, "\b\bExitting Server...");
+    debug_print("\b\bExitting Server...");
     close(sockfd);      //não deixa receber mais ligações
     
     for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++) {       //espera que threads acabem os trabalhos dos clientes
@@ -259,13 +259,13 @@ void exitServer(){
     }
 
     TIMER_READ(stopTime);
-    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     print_tecnicofs_tree(outputFp, fs);
+    fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
     fflush(outputFp);
     fclose(outputFp);
-
     free_tecnicofs(fs);
 
+    debug_print("%sServer Exited.%s\n", "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", "    ");
     exit(EXIT_SUCCESS);
 }
 

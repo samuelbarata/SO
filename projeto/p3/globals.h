@@ -24,9 +24,9 @@
 #define OPEN_OTHER_WRITE	0b000100000
 #define ESPACO_AVAILABLE	0b001000000
 #define USER_IS_OWNER		0b010000000
-#define OPEN_USER			OPEN_USER_READ | OPEN_USER_WRITE
-#define OPEN_OTHER			OPEN_OTHER_READ | OPEN_OTHER_WRITE
-#define OPEN_ANY			OPEN_USER | OPEN_OTHER
+#define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
+#define OPEN_OTHER			(OPEN_OTHER_READ | OPEN_OTHER_WRITE)
+#define OPEN_ANY			(OPEN_USER | OPEN_OTHER)
 
 #include <sys/types.h>
 #include <stdlib.h>
@@ -46,17 +46,17 @@ typedef struct client{
 	syncMech lock;
 } client;
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-
 #ifdef DEBUG
 	#define DEBUG_TEST 1
 #else
 	#define DEBUG_TEST 0
 #endif
 
-//debug print
-#define debug_print(fmt, ...) do { if (DEBUG_TEST) fprintf(stdout, fmt, __VA_ARGS__);fflush(stdout);} while (0)
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+/*Prints debug information to stdout
+Uses similar syntax to fprintf*/
+#define debug_print(...) do { if (DEBUG_TEST) fprintf(stdout, __VA_ARGS__);fflush(stdout);} while (0)
 
 #endif /* CONSTANTS_H */

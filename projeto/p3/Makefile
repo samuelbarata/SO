@@ -70,4 +70,4 @@ runc: client-api-test-create.sh client-api-test-delete.sh client-api-test-read.s
 
 debug: CFLAGS+=-DDEBUG
 debug: clean all
-	
+	make runs
