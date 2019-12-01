@@ -246,7 +246,7 @@ void connections(){
         cliente->uid=ucreds.uid;
 
         for(int i = 0; i < MAX_OPEN_FILES; i++){
-            cliente->ficheiros[i].fd = FILE_CLOSED;
+            cliente->ficheiros[i].inumber = FILE_CLOSED;
             cliente->ficheiros[i].mode = NONE;
             sync_init(&cliente->lock);
             cliente->ficheiros[i].key=NULL;

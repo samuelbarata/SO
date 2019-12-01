@@ -17,7 +17,10 @@ CLIENTS	= client-api-test-create client-api-test-delete client-api-test-read cli
 
 .PHONY: all clean debug runs runc cleaner clients zip
 
+#compila server + API
 all: $(TARGETS) $(API)
+
+#compila clientes teste + API
 clients: $(CLIENTS) $(API)
 
 $(TARGETS):
@@ -72,14 +75,10 @@ runs: $(TARGETS)
 	./tecnicofs-rwlock /tmp/mySocket myout.out 2
 
 runc: $(API) $(CLIENTS)
-	#./client-api-test-create /tmp/mySocket
-	#./client-api-test-delete /tmp/mySocket
-	#./client-api-test-read /tmp/mySocket
-	#./client-api-test-success /tmp/mySocket
 	./client-killer /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
 debug: clean all $(CLIENTS)
 
-zip: clean
+zip: cleaner
 	zip proj.zip *.c *.h lib/*.c lib/*.h client/*.c client/*.h server/*.c server/*.h Makefile

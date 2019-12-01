@@ -123,16 +123,20 @@ void other(char* sock){
 	int sockfd = serverSocket;
 	system("whoami");
 	assert(tfsMount(sock) == 0);
-	sleep(1);
+	
+	printf("\npausa dramatica bue irritante\n");
+	sleep(2);
+
 	wait(sockfd);
 	assert(tfsCreate("z", RW, NONE) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);	//criar ficheiro existente
 	assert(tfsOpen("z", RW)==0);												//abrir ficheiro outro user com perms
+
 	pauser(sockfd);
+
 	assert(tfsRead(0, NULL, 0)==TECNICOFS_ERROR_FILE_NOT_FOUND);				//ler ficheiro aberto e apagado
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
 	assert(fd>=0);
 	assert(tfsRead(fd, NULL, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
-
 	assert(tfsClose(fd)==0);													//fechar ficheiro certo
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
 	printf("%d", fd);
@@ -141,17 +145,18 @@ void other(char* sock){
     assert(tfsUnmount() == 0);
 	fprintf(stdout, "SUCCESS\n");
 	
-	//pauser(sockfd);
-
 	printf("\nsamuel\n");
 	assert(tfsMount(sock) == 0);
 	assert(tfsCreate("abc", RW, RW) == 0);
+	
 	pauser(sockfd);
+	
 	fd = tfsOpen("abc", RW);
 	assert(fd>=0);
 	assert(tfsWrite(fd, "ola", 4)==0);
 	assert(tfsRename("abc", "def") == 0);
 	assert(tfsCreate("abc", RW, RW) == 0);
+	
 	post(sockfd);
 	assert(tfsRead(fd,buffer, 4)==3);
 	assert(tfsUnmount() == 0);

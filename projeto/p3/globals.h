@@ -15,8 +15,8 @@
 #define MINGUA_CONSTANT 	0.0001
 #define CODE_SIZE			5
 
-//#define READ				0b000000001
-//#define WRITE				0b000000010
+//#define READ				0b00000000001
+//#define WRITE				0b00000000010
 
 #define OPEN_USER_READ		0b00000000100
 #define OPEN_USER_WRITE		0b00000001000
@@ -37,8 +37,8 @@
 #include "lib/sync.h"
 
 typedef struct ficheiro{
-	char* key;
-	int fd;
+	char* key;	//file name
+	int inumber;
 	permission mode;
 } ficheiro;
 
