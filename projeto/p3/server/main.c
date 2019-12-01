@@ -30,7 +30,7 @@ FILE* outputFp=NULL;			//ficheiro de output do server
 sigset_t set;					//sinais a ignorar pelas threads
 tecnicofs* fs;					//filesystem
 TIMER_T startTime, stopTime;
-
+int nClients;
 
 static void displayUsage (const char* appName){
 	fprintf(stderr,"Usage: %s nomesocket output_filepath numbuckets[>=1]\n", appName);
@@ -226,7 +226,7 @@ void connections(){
 	client *cliente;
 	clilen = sizeof(cli_addr);
 	ucred_len = sizeof(struct ucred);
-	for(int nClients=0;nClients<MAX_CLIENTS;nClients++){
+	for(nClients=0;nClients<MAX_CLIENTS;nClients++){
 		newsockfd = safe_accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);	//accept client
 		cliente = safe_malloc(sizeof(client), THREAD);										//malloc client
 		
@@ -249,7 +249,6 @@ void connections(){
 
 		clients[nClients]=cliente;		//adicionar cliente array global de clients
 		safe_pthread_create(&workers[nClients], NULL, newClient, (void*)cliente);	//iniciar threas clientes
-
 	}
 	fprintf(stderr, "Max client number reached\n");
 	raise(SIGINT);
@@ -263,7 +262,7 @@ void exitServer(){
 	debug_print("\b\bExitting Server...");
 	close(sockfd);		//não deixa receber mais ligações
 
-	for(int i = 0; i<MAX_CLIENTS && workers[i]!=0; i++)		//espera que threads acabem os trabalhos dos clientes
+	for(int i = 0; i<nClients; i++)		//espera que threads acabem os trabalhos dos clientes
 		safe_pthread_join(workers[i], NULL, IGNORE);
 
 	TIMER_READ(stopTime);

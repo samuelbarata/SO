@@ -75,6 +75,10 @@ runs: $(TARGETS)
 	./tecnicofs-rwlock /tmp/mySocket myout.out 2
 
 runc: $(API) $(CLIENTS)
+	#./client-api-test-create /tmp/mySocket
+	#./client-api-test-delete /tmp/mySocket
+	#./client-api-test-read /tmp/mySocket
+	#./client-api-test-success /tmp/mySocket
 	./client-killer /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
