@@ -45,11 +45,12 @@ int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 
 	if(inumber != TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
+		free(perms);
 		return TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
 	}
 	if((perms[0] | perms[1]) & ~RW){
-		free(perms);
 		sync_unlock(&(fs->bstLock[index]));
+		free(perms);
 		return TECNICOFS_ERROR_INVALID_PERMISSION;
 	}
 
