@@ -2,9 +2,9 @@
 
 #ifndef FS_H
 #define FS_H
+#include "../lib/globals.h"
 #include "../lib/bst.h"
 #include "../lib/sync.h"
-#include "../lib/globals.h"
 #include "../tecnicofs-api-constants.h"
 
 typedef struct tecnicofs {

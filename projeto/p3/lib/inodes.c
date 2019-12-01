@@ -201,4 +201,7 @@ int inode_open(int inumber){
 }
 int inode_close(int inumber){
 	inode_table[inumber].count--;
+	if(inode_table[inumber].count == 0 && inode_table[inumber].deleted){
+		inode_delete(inumber);
+	}
 }

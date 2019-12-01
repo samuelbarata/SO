@@ -22,7 +22,7 @@ void inode_table_destroy();
 int inode_create(uid_t owner, permission ownerPerm, permission othersPerm);
 int inode_delete(int inumber);
 int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *othersPerm,
-                     char* fileContents, int len);
+                     char* fileContents, int len, int deleted);
 int inode_set(int inumber, char *contents, int len);
 int inode_open(int inumber);
 int inode_close(int inumber);
