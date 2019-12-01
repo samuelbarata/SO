@@ -103,10 +103,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 		for(i = 0; i<MAX_OPEN_FILES; i++)
 			if(user->ficheiros[i].fd == searchNode->inumber)
 				break;
-		user->ficheiros[i].fd = FILE_CLOSED;
-		user->ficheiros[i].mode = NONE;
-		free(user->ficheiros[i].key);
-		user->ficheiros[i].key=NULL;
+		free_file(user, i);
 		sync_unlock(&user->lock);	
 	}
 
@@ -268,10 +265,7 @@ int closeFile(tecnicofs *fs, char* fdstr, client* user){
 		sync_unlock(&user->lock);
 		return TECNICOFS_ERROR_FILE_NOT_FOUND;
 	}
-	user->ficheiros[fd].fd = FILE_CLOSED;
-	user->ficheiros[fd].mode = NONE;
-	free(user->ficheiros[fd].key);
-	user->ficheiros[fd].key=NULL;
+	free_file(user, fd);
 	sync_unlock(&user->lock);
 	return 0;
 }
@@ -483,11 +477,15 @@ int ficheiroApagadoChecker(tecnicofs *fs, client *user, int fd, int checker){
 		if(!(checker&OPEN_OTHER))						//se ficheiro nao estiver aberto por outros utilizadores; inode pode ser apagado
 			inode_delete(user->ficheiros[fd].fd);
 		
-		user->ficheiros[fd].fd = FILE_CLOSED;
-		user->ficheiros[fd].mode = NONE;
-		free(user->ficheiros[fd].key);
-		user->ficheiros[fd].key=NULL;
+		free_file(user, fd);
 		return FILE_CLOSED;
 	}
 	return fd;
+}
+
+void free_file(client* user, int fd){
+	user->ficheiros[fd].fd = FILE_CLOSED;
+	user->ficheiros[fd].mode = NONE;
+	free(user->ficheiros[fd].key);
+	user->ficheiros[fd].key=NULL;
 }

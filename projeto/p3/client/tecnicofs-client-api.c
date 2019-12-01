@@ -147,7 +147,9 @@ int sendMsg(char* msg, char* res, int len){
 	recvline = safe_malloc(len, MAIN);
 	bzero(recvline, MAX_INPUT_SIZE);
 	n = read(sockfd, recvline, MAX_INPUT_SIZE);
-	if (n<0)
+	if(n==0)
+		return TECNICOFS_ERROR_CONNECTION_ERROR;
+	else if (n<0)
 		return TECNICOFS_ERROR_OTHER;
 	debug_print("\t\t%s\n", recvline);
 	sscanf(recvline, "%d %s", &n, res);

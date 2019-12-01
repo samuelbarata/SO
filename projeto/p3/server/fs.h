@@ -29,5 +29,6 @@ char* readFromFile(tecnicofs *fs, char* filename, char* len, client* user);
 permission *permConv(char* perms);    //recebe string com permissões; devolve array int [owner, others]
 int checkUserPerms(client* , int , int, char*, int);
 int ficheiroApagadoChecker(tecnicofs *fs, client *user, int fd, int checker);
+void free_file(client* user, int fd);
 
 #endif /* FS_H */

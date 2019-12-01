@@ -225,23 +225,21 @@ void connections(){
     int newsockfd, clilen;
 	struct sockaddr_un cli_addr;
     client *cliente;
+    clilen = sizeof(cli_addr);
+    ucred_len = sizeof(struct ucred);
 
-    for(;;){
-		clilen = sizeof(cli_addr);
-		if(nClients>=MAX_CLIENTS){
-			fprintf(stderr, "max client number reached");
-			raise(SIGINT);
-		}
+    for(nClients=0;nClients<MAX_CLIENTS;nClients++){
+		
 		newsockfd = safe_accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);
 
         cliente = safe_malloc(sizeof(client), THREAD);
-        nClients++;
 
-		ucred_len = sizeof(struct ucred);
+		
         if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){
 			perror("cant get client uid");
             close(newsockfd);
 			free(cliente);
+            nClients--;
 			continue;
 		}
         cliente->socket=newsockfd;
@@ -254,10 +252,12 @@ void connections(){
             cliente->ficheiros[i].key=NULL;
         }
 
-		clients[nClients-1]=cliente;
-        safe_pthread_create(&workers[nClients-1], NULL, newClient, (void*)cliente);
+		clients[nClients]=cliente;
+        safe_pthread_create(&workers[nClients], NULL, newClient, (void*)cliente);
 
 	}
+    fprintf(stderr, "max client number reached");
+	raise(SIGINT);
 }
 
 void exitServer(){
