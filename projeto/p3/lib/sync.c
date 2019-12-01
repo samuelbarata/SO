@@ -1,7 +1,7 @@
 /* Sistemas Operativos, DEI/IST/ULisboa 2019-20 */
 
 #include "sync.h"
-#include "lib/timer.h"
+#include "timer.h"
 #include <stdio.h>
 #include <stdlib.h>
 

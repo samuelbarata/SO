@@ -13,17 +13,20 @@
 #define FILE_CLOSED 		-1
 #define DELAY				5000
 #define MINGUA_CONSTANT 	0.0001
-#define CODE_SIZE			4			//maior codigo == "-11\0"
+#define CODE_SIZE			5
 
-//#define USER_CAN_READ		0b000000001
-//#define USER_CAN_WRITE	0b000000010
+//#define READ				0b00000000001
+//#define WRITE				0b00000000010
 
-#define OPEN_USER_READ		0b000000100
-#define OPEN_USER_WRITE		0b000001000
-#define	OPEN_OTHER_READ		0b000010000
-#define OPEN_OTHER_WRITE	0b000100000
-#define ESPACO_AVAILABLE	0b001000000
-#define USER_IS_OWNER		0b010000000
+#define OPEN_USER_READ		0b00000000100
+#define OPEN_USER_WRITE		0b00000001000
+#define	OPEN_OTHER_READ		0b00000010000
+#define OPEN_OTHER_WRITE	0b00000100000
+#define ESPACO_AVAILABLE	0b00001000000
+#define USER_IS_OWNER		0b00010000000
+#define OTHER_READ			0b00100000000
+#define OTHER_WRITE			0b01000000000
+#define OTHER_RW			(OTHER_READ | OTHER_WRITE)
 #define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
 #define OPEN_OTHER			(OPEN_OTHER_READ | OPEN_OTHER_WRITE)
 #define OPEN_ANY			(OPEN_USER | OPEN_OTHER)
@@ -31,14 +34,18 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include "tecnicofs-api-constants.h"
+<<<<<<< HEAD
 #include "sync.h"
 <<<<<<< HEAD
 =======
+=======
+#include "lib/sync.h"
+>>>>>>> fazer-ainda-mais-merda
 
 >>>>>>> fazer-ainda-mais-merda
 typedef struct ficheiro{
-	char* key;
-	int fd;
+	char* key;	//file name
+	int inumber;
 	permission mode;
 } ficheiro;
 

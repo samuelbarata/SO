@@ -20,6 +20,7 @@ node *insert(node *p, char* key, int inumber);
 node *find_min(node *p);
 node *remove_min(node *p);
 node *remove_item(node *p, char* key);
+node *inumberLookup(node *p, int inumber);
 void free_tree(node *p);
 void print_tree(FILE* fp, node *p);
 

@@ -1,5 +1,5 @@
-#include "../tecnicofs-client-api.h"
 #include "../tecnicofs-api-constants.h"
+#include "../client/tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
     assert(tfsUnmount() == 0);
 
-    printf("\nCONGRATS\n\n");
+    printf("\nSUCCESS\n\n");
 
     return 0;
 }
