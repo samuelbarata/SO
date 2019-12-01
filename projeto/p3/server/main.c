@@ -2,7 +2,7 @@
 	#define _GNU_SOURCE
 #endif
 
-#include "../globals.h"
+#include "../lib/globals.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -213,7 +213,6 @@ void *newClient(void* cli){
 	}
 
 	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
-	sync_destroy(&cliente->lock);
 	free(cliente);
 	return NULL;
 }
@@ -243,8 +242,6 @@ void connections(){
 		for(int i = 0; i < MAX_OPEN_FILES; i++){	//init empty file array
 			cliente->ficheiros[i].inumber = FILE_CLOSED;
 			cliente->ficheiros[i].mode = NONE;
-			sync_init(&cliente->lock);
-			cliente->ficheiros[i].key=NULL;
 		}
 
 		clients[nClients]=cliente;		//adicionar cliente array global de clients

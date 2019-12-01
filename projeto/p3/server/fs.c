@@ -8,7 +8,6 @@
 #include "../lib/hash.h"
 #include "../lib/inodes.h"
 
-extern client *clients[MAX_CLIENTS];	//array clients
 
 tecnicofs* new_tecnicofs(){
 	tecnicofs*fs = safe_malloc(sizeof(tecnicofs), MAIN);
@@ -35,40 +34,37 @@ void free_tecnicofs(tecnicofs* fs){
 	free(fs);	
 }
 
+
 /**
  * cria um ficheiro no fs
 */
 int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	int index = hash(name, numberBuckets);
 	int error_code = 0;
-	sync_wrlock(&(fs->bstLock[index]));
-	node* searchNode = search(fs->bstRoot[index], name);
-	
-	//verificacao erros
-	if(searchNode)
-		error_code = TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
-	else if(perms[0]==TECNICOFS_ERROR_INVALID_PERMISSION || perms[1] == TECNICOFS_ERROR_INVALID_PERMISSION)		
-		error_code = TECNICOFS_ERROR_INVALID_PERMISSION;
 
-	if(error_code){
+	sync_rwlock(&(fs->bstLock[index]));
+	int inumber = lookup(fs, name);
+
+	if(inumber != TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
+		return TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
+	}
+	if((perms[0] | perms[1]) && ~RW){
 		free(perms);
-		return error_code;
+		sync_unlock(&(fs->bstLock[index]));
+		return TECNICOFS_ERROR_INVALID_PERMISSION;
 	}
 
-	//criar inode obter inumber
-	int inumber = inode_create(user->uid, perms[0], perms[1]);
+	inumber = inode_create(user->uid, perms[0], perms[1]);
+	free(perms);
+
 	if(inumber<0){
-		free(perms);
 		sync_unlock(&(fs->bstLock[index]));
-		return TECNICOFS_ERROR_OTHER;
+		return TECNICOFS_ERROR_MAXED_FILES;
 	}
 
-	//insert bst
 	fs->bstRoot[index] = insert(fs->bstRoot[index], name, inumber);
 	sync_unlock(&(fs->bstLock[index]));
-	
-	free(perms);
 	return 0;
 }
 
@@ -81,13 +77,14 @@ int delete(tecnicofs* fs, char *name, client *user){
 	int index = hash(name, numberBuckets);
 	int error_code = 0, checker=0;
 	sync_wrlock(&(fs->bstLock[index]));
-	node* searchNode = search(fs->bstRoot[index], name);
-	if(!searchNode){
+	int inumber = lookup(fs, name);
+
+	if(inumber == TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
 		return  TECNICOFS_ERROR_FILE_NOT_FOUND;
 	}
-	
-	checker = checkUserPerms(user, searchNode->inumber, TRUE ,NULL,0);
+
+	checker = checkUserPerms(user, inumber ,NULL,0);
 	if(checker<0){
 		sync_unlock(&(fs->bstLock[index]));
 		return checker;
@@ -100,16 +97,12 @@ int delete(tecnicofs* fs, char *name, client *user){
 
 	if(checker & OPEN_USER){		//fecha o ficheiro se estiver aberto pelo utilizador
 		int i;
-		sync_wrlock(&(user->lock));
 		for(i = 0; i<MAX_OPEN_FILES; i++)
-			if(user->ficheiros[i].inumber == searchNode->inumber)
+			if(user->ficheiros[i].inumber == inumber)
 				break;
 		free_file(user, i);
-		sync_unlock(&(user->lock));	
 	}
-
-	if(!(checker & OPEN_OTHER))
-		inode_delete(searchNode->inumber);
+	inode_delete(inumber);
 	
 	fs->bstRoot[index] = remove_item(fs->bstRoot[index], name);
 	sync_unlock(&(fs->bstLock[index]));
@@ -124,17 +117,24 @@ int delete(tecnicofs* fs, char *name, client *user){
 int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
-	int error_code=0, extendedPermissions, inumber=-1;
+	int error_code=0, cheker, inumber=-1;
 	sync_rdlock(&(fs->bstLock[index0]));
-	node *searchNode1, *searchNode = search(fs->bstRoot[index0], name);
+	int inumber0 = lookup(fs, name);
 	sync_unlock(&(fs->bstLock[index0]));
+	sync_rdlock(&(fs->bstLock[index1]));
+	int inumber1 = lookup(fs, newName);
+	sync_unlock(&(fs->bstLock[index1]));
 
-	if(!searchNode)
-		return TECNICOFS_ERROR_FILE_NOT_FOUND;
+	if(inumber0 < 0)
+		return inumber0;	//file not found
 	
-	extendedPermissions = checkUserPerms(user , searchNode->inumber,TRUE,NULL,0);
+	if(inumber1>=0)
+		return TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
 
-	if(!(extendedPermissions & USER_IS_OWNER))
+
+	cheker = checkUserPerms(user , inumber0,NULL,0);
+
+	if(!(cheker & USER_IS_OWNER))
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 
 	if(index0!=index1)
@@ -150,11 +150,11 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	else
 		sync_wrlock(&(fs->bstLock[index1]));
 
-	searchNode = search(fs->bstRoot[index0], name);
-	searchNode1 = search(fs->bstRoot[index1], newName);
-	if(!searchNode)
-		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-	else if(searchNode1)
+	int inumber0 = lookup(fs, name);
+	int inumber1 = lookup(fs, newName);
+	if(inumber0 < 0)
+		error_code = inumber0;	//file not found
+	else if(inumber1>=0)
 		error_code = TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
 	if(error_code){
 		sync_unlock(&(fs->bstLock[index1]));
@@ -163,19 +163,16 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 		return error_code;
 	}
 
-	inumber = searchNode->inumber;
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
-	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
+	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber0);	//adiciona
 	
-	if(extendedPermissions&OPEN_USER){	//altera nome ficheiro aberto
-		sync_wrlock(&(user->lock));
+	if(cheker&OPEN_USER){	//altera nome ficheiro aberto
 		int i;
 		for(i=0;i<MAX_OPEN_FILES;i++)
 			if(user->ficheiros[i].inumber == inumber)
 				break;
 		free(user->ficheiros[i].key);
 		user->ficheiros[i].key=safe_strdup(newName, THREAD);
-		sync_unlock(&(user->lock));
 	}
 
 	sync_unlock(&(fs->bstLock[index1]));
@@ -194,37 +191,32 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	int index = hash(filename, numberBuckets),i;
 	int error_code = 0;
 	int checker;
-	sync_wrlock(&(fs->bstLock[index]));
-	node* searchNode = search(fs->bstRoot[index], filename);
+	sync_rdlock(&(fs->bstLock[index]));
+	int inumber = lookup(fs, filename);
 
-	if(!searchNode)
+	if(inumber<0)	//ficheiro existe?
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-
-	if(!error_code){
-		checker = checkUserPerms(user , searchNode->inumber,0,NULL,0);
+	else{			//vai buscar permições
+		checker = checkUserPerms(user ,inumber,NULL,0);
 		if(checker<0)
 			error_code=checker;
 	}
-
 	int mode = atoi(modeIn);
-	if((mode & ~RW)&& !error_code)
+	if((mode & ~RW) && !error_code)	//modo existe?
 		error_code=TECNICOFS_ERROR_INVALID_PERMISSION;
-	if(mode == 0 && !error_code)
+	if(mode == 0 && !error_code)	//modo valido?
 		error_code = TECNICOFS_ERROR_INVALID_MODE;
 	
-
 	if(error_code){
 		sync_unlock(&(fs->bstLock[index]));
 		return error_code;
 	}
 
-	if(!error_code && checker & OPEN_USER){
-		sync_wrlock(&(user->lock));
+	if(checker & OPEN_USER){
 		for(i = 0;i<MAX_OPEN_FILES;i++)
-			if(user->ficheiros[i].inumber == searchNode->inumber)
+			if(user->ficheiros[i].inumber == inumber)
 				break;
 		user->ficheiros[i].mode = user->ficheiros[i].mode | mode;
-		sync_unlock(&(user->lock));
 		sync_unlock(&(fs->bstLock[index]));
 		return i;
 	}
@@ -236,17 +228,14 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 	
 	if(!error_code){
-		sync_wrlock(&(user->lock));
 		for(i = 0;i<MAX_OPEN_FILES;i++){
 			if(user->ficheiros[i].inumber == FILE_CLOSED){
-				user->ficheiros[i].inumber = searchNode->inumber;
+				user->ficheiros[i].inumber = inumber;
 				user->ficheiros[i].mode = mode;
-				user->ficheiros[i].key = safe_strdup(searchNode->key, THREAD);
 				error_code = i;
 				break;
 			}
 		}
-		sync_unlock(&(user->lock));
 	}
 	sync_unlock(&(fs->bstLock[index]));
 	return error_code;
@@ -257,7 +246,7 @@ int closeFile(tecnicofs *fs, char* fdstr, client* user){
 	if(fd<0 || fd>=MAX_OPEN_FILES)
 		return TECNICOFS_INVALID_FD;
 	
-	int aux = checkUserPerms(user, user->ficheiros[fd].inumber, TRUE, NULL, 0);
+	int aux = checkUserPerms(user, user->ficheiros[fd].inumber, NULL, 0);
 	sync_wrlock(&(user->lock));
 	if(user->ficheiros[fd].inumber==FILE_CLOSED){
 		sync_unlock(&(user->lock));
@@ -370,26 +359,24 @@ permission *permConv(char* perms){
 
 /**
  * HOW TO USE :
- * checkUserPerms(cliente, ficheiro, 0, NULL, 0) & CENA_A_TESTAR
+ * checkUserPerms(cliente, ficheiro, NULL, 0) & CENA_A_TESTAR
  * 
  * user can write					0b00000001
  * user can read					0b00000010
  * file open for writtint by user	0b00000100
  * file open for reading by user	0b00001000
- * file open for writing by other	0b00010000
- * file open for reading by other	0b00100000
  * space to open more files			0b01000000
  */
-int checkUserPerms(client* cliente , int inumber, int advanced ,char* fileContent, int len){
+int checkUserPerms(client* cliente , int inumber ,char* fileContent, int len){
 	uid_t self = cliente->uid;
 	uid_t owner;
 	permission ownerPerm, othersPerm;
-	int res=0b00000000, aux = 0b00000000;
+	int res=0b00000000, aux = 0b00000000, deleted;
 	if(!fileContent)
 		len=0;
 	if(inumber<0)
 		return TECNICOFS_ERROR_OTHER;
-	aux = inode_get(inumber,&owner,&ownerPerm,&othersPerm,fileContent,len);
+	aux = inode_get(inumber,&owner,&ownerPerm,&othersPerm,fileContent,len,deleted);
 	if(aux<0)
 		return TECNICOFS_ERROR_OTHER;
 	
@@ -397,8 +384,9 @@ int checkUserPerms(client* cliente , int inumber, int advanced ,char* fileConten
 		res |= OTHER_READ;
 	if(othersPerm&WRITE)
 		res |= OTHER_WRITE;
+	if(deleted)
+		res |= FILE_DELETED;
 
-	sync_rdlock(&(cliente->lock));
 	if(cliente->uid==owner){		//user is owner
 		res|=USER_IS_OWNER;
 		if(ownerPerm&READ)
@@ -423,38 +411,6 @@ int checkUserPerms(client* cliente , int inumber, int advanced ,char* fileConten
 				res|=OPEN_USER_WRITE;
 		}
 	}
-	sync_unlock(&(cliente->lock));
-	if(advanced)	//verifica quem tem o ficheiro aberto
-		for(int i=0;clients[i]!=NULL && i<MAX_CLIENTS;i++){
-			sync_rdlock(&(clients[i]->lock));
-			for(int k = 0;k<MAX_OPEN_FILES;k++){
-				if(clients[i]->ficheiros[k].inumber==inumber){
-					switch(clients[i]->ficheiros[k].mode){
-						case NONE:
-							break;
-						case WRITE:
-							if(self == clients[i]->uid)
-								res|=OPEN_USER_WRITE;
-							else
-								res|=OPEN_OTHER_WRITE;
-							break;
-						case READ:
-							if(self == clients[i]->uid)
-								res|=OPEN_USER_READ;
-							else
-								res|=OPEN_OTHER_READ;
-							break;
-						case RW:
-							if(self == clients[i]->uid)
-								res|=OPEN_USER;
-							else
-								res|=OPEN_OTHER;
-							break;
-					}
-				}
-			}
-			sync_unlock(&(clients[i]->lock));
-		}
 	return res;
 }
 
@@ -486,20 +442,27 @@ int ficheiroApagadoChecker(tecnicofs *fs, client *user, int fd, int checker){
 	}
 	return fd;
 }
-<<<<<<< HEAD:projeto/p3/fs.c
-=======
 
 /**
  * Recebe user e file descriptor
  * Fecha o ficheiro
 */
 void free_file(client* user, int fd){
+	inode_close(user->ficheiros[fd].inumber);
 	user->ficheiros[fd].inumber = FILE_CLOSED;
 	user->ficheiros[fd].mode = NONE;
-	free(user->ficheiros[fd].key);
-	user->ficheiros[fd].key=NULL;
 }
 
+/**
+ * !!DENTRO LOCKS
+ * Recebe fs e name
+ * devolve inumber correspondente
+*/
+int lookup(tecnicofs *fs, char *name){
+	int index = hash(name, numberBuckets);
+	node* searchNode = search(fs->bstRoot[index], name);
+	return searchNode ? searchNode->inumber : TECNICOFS_ERROR_FILE_NOT_FOUND;
+}
 
 /**
  * Usada para ver se um ficheiro foi renomeado
@@ -508,7 +471,7 @@ void free_file(client* user, int fd){
  * caso contrario, apagado
  * devolve o node do ficheiro novo; ou NULL
  */
-node* lookup(tecnicofs *fs, int inumber){
+node* nodeLookup(tecnicofs *fs, int inumber){
 	for(int i = 0;i<numberBuckets;i++){
 		sync_rdlock(&(fs->bstLock[i]));
 		node* searchNode = inumberLookup(fs->bstRoot[i], inumber);
@@ -518,4 +481,3 @@ node* lookup(tecnicofs *fs, int inumber){
 	}
 	return NULL;
 }
->>>>>>> fazer-ainda-mais-merda:projeto/p3/server/fs.c

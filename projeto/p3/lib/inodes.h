@@ -12,6 +12,8 @@ typedef struct inode_t {
     permission ownerPermissions;
     permission othersPermissions;
     char* fileContent;
+    unsigned int count;
+    int deleted;
 } inode_t;
 
 
@@ -22,5 +24,7 @@ int inode_delete(int inumber);
 int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *othersPerm,
                      char* fileContents, int len);
 int inode_set(int inumber, char *contents, int len);
+int inode_open(int inumber);
+int inode_close(int inumber);
 
 #endif /* INODES_H */

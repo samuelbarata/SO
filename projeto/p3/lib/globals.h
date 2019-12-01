@@ -20,31 +20,20 @@
 
 #define OPEN_USER_READ		0b00000000100
 #define OPEN_USER_WRITE		0b00000001000
-#define	OPEN_OTHER_READ		0b00000010000
-#define OPEN_OTHER_WRITE	0b00000100000
-#define ESPACO_AVAILABLE	0b00001000000
-#define USER_IS_OWNER		0b00010000000
-#define OTHER_READ			0b00100000000
-#define OTHER_WRITE			0b01000000000
-#define OTHER_RW			(OTHER_READ | OTHER_WRITE)
+#define ESPACO_AVAILABLE	0b00000010000
+#define USER_IS_OWNER		0b00000100000
 #define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
-#define OPEN_OTHER			(OPEN_OTHER_READ | OPEN_OTHER_WRITE)
-#define OPEN_ANY			(OPEN_USER | OPEN_OTHER)
+#define FILE_DELETED		0b00001000000
 
 #include <sys/types.h>
 #include <stdlib.h>
 #include "tecnicofs-api-constants.h"
-<<<<<<< HEAD
-#include "sync.h"
-<<<<<<< HEAD
-=======
-=======
-#include "lib/sync.h"
->>>>>>> fazer-ainda-mais-merda
 
->>>>>>> fazer-ainda-mais-merda
+#include "sync.h"
+
+#include "lib/sync.h"
+
 typedef struct ficheiro{
-	char* key;	//file name
 	int inumber;
 	permission mode;
 } ficheiro;
@@ -52,12 +41,7 @@ typedef struct ficheiro{
 typedef struct client{
 	int socket;
 	uid_t uid;
-<<<<<<< HEAD
-	ficheiro ficheiros[USER_ABERTOS];
-=======
 	ficheiro ficheiros[MAX_OPEN_FILES];
->>>>>>> fazer-ainda-mais-merda
-	syncMech lock;
 } client;
 
 #ifdef DEBUG
