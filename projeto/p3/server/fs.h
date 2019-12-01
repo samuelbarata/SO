@@ -20,7 +20,7 @@ void free_tecnicofs(tecnicofs* fs);
 int create(tecnicofs *fs, char *name,client* owner, permission *perms);
 int delete(tecnicofs *fs, char *name,client* user);
 int reName(tecnicofs* fs, char *name, char *newName, client* user);
-int lookup(tecnicofs *fs, char *name);
+node* lookup(tecnicofs *fs, int inumber);
 void print_tecnicofs_tree(FILE * fp, tecnicofs *fs);
 int openFile(tecnicofs *fs, char* filename,char* mode, client* user);
 int closeFile(tecnicofs *fs, char* filename, client* user);

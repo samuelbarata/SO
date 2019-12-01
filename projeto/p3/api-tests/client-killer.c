@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 			strcpy(buffer, testes[i]);
 			system(buffer);
 		}
-		fprintf(stdout,"Open a terminal and run this file as root while leaving this one open\nsudo %s %s", argv[0], argv[1]);
+		fprintf(stdout,"Open a terminal and run this file as root while leaving this one open\nsudo %s %s\n", argv[0], argv[1]);
 		fflush(stdout);
 		init();
 		user(argv[1]);
@@ -100,16 +100,30 @@ void user(char* sock){
 	pauser(sockfd);
 	assert(tfsRename("z", "k")==0);
 	
-
-
-
     assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
+	pauser(sockfd);
+
+	printf("maria\n");
+	assert(tfsMount(sock) == 0);
+	fd = tfsOpen("abc", RW);
+	assert(fd>=0);
+	pauser(sockfd);
+	assert(tfsWrite(fd, "ola",0)==TECNICOFS_ERROR_FILE_NOT_FOUND);
+
+
+	assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
+
 }
+
+
 
 void other(char* sock){
 	int sockfd = serverSocket;
 	system("whoami");
 	assert(tfsMount(sock) == 0);
+	sleep(1);
 	wait(sockfd);
 	assert(tfsCreate("z", RW, NONE) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);	//criar ficheiro existente
 	assert(tfsOpen("z", RW)==0);												//abrir ficheiro outro user com perms
@@ -124,10 +138,23 @@ void other(char* sock){
 	printf("%d", fd);
 	assert(fd>=0);
 	assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo errado
-
-
     assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
+	
+	//pauser(sockfd);
+
+	printf("\nsamuel\n");
+	assert(tfsMount(sock) == 0);
+	assert(tfsCreate("abc", RW, RW) == 0);
+	pauser(sockfd);
+	fd = tfsOpen("abc", RW);
+	assert(fd>=0);
+	assert(tfsWrite(fd, "ola", 4)==0);
+	assert(tfsRename("abc", "def") == 0);
+	assert(tfsCreate("abc", RW, RW) == 0);
+	post(sockfd);
+	assert(tfsRead(fd,buffer, 4)==3);
+	assert(tfsUnmount() == 0);
 
 	fprintf(stdout, "SUCCESS\n");
-
 }

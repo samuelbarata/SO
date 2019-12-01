@@ -28,4 +28,8 @@ typedef enum permission { NONE, WRITE, READ, RW } permission;
 /* Generic error */
 #define TECNICOFS_ERROR_OTHER -11
 
+//TODO: descobrir qual é suposto ser o codigo destes erros:
+#define TECNICOFS_ERROR_INVALID_PERMISSION	-11
+#define TECNICOFS_INVALID_FD				-11
+
 #endif /* TECNICOFS_API_CONSTANTS_H */
