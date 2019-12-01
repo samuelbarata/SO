@@ -25,7 +25,7 @@ char* global_outputFile = NULL;
 int numberBuckets;
 int sockfd;						//socket servidor
 pthread_t* workers=NULL;		//ligacoes existentes
-client* clients[MAX_CLIENTS];	//array clients
+client *clients[MAX_CLIENTS];				//array clients
 FILE* outputFp=NULL;			//ficheiro de output do server
 sigset_t set;					//sinais a ignorar pelas threads
 tecnicofs* fs;					//filesystem
@@ -156,7 +156,7 @@ void inits(){
 	struct sockaddr_un serv_addr;
 	int servlen;
 
-	bzero(clients, MAX_CLIENTS);
+	bzero(clients, sizeof(client*)*MAX_CLIENTS);
 
 	srand(time(NULL));
 
@@ -196,11 +196,12 @@ void *newClient(void* cli){
 			perror("read from socket");
 			break;
 		}
+
+		//prints debug input from client
 		debug_print("%02d:%d: %s",cliente->socket,cliente->uid, line);
-
-		fflush(stdout);
+		
 		res = applyCommand(line, cliente);
-
+		//prints debug output to client
 		debug_print(": %s\n",res);
 
 		n = dprintf(cliente->socket, "%s", res);
@@ -210,6 +211,7 @@ void *newClient(void* cli){
 			break;
 		}
 	}
+
 	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
 	sync_destroy(&cliente->lock);
 	free(cliente);
@@ -224,11 +226,9 @@ void connections(){
 	client *cliente;
 	clilen = sizeof(cli_addr);
 	ucred_len = sizeof(struct ucred);
-
 	for(int nClients=0;nClients<MAX_CLIENTS;nClients++){
 		newsockfd = safe_accept(sockfd,(struct sockaddr*) &cli_addr,(socklen_t*) &clilen);	//accept client
 		cliente = safe_malloc(sizeof(client), THREAD);										//malloc client
-
 		
 		if(getsockopt(newsockfd, SOL_SOCKET, SO_PEERCRED, &ucreds, &ucred_len) == -1){		//get user credentials
 			perror("cant get client uid");
@@ -272,7 +272,7 @@ void exitServer(){
 	fflush(outputFp);
 	fclose(outputFp);
 	free_tecnicofs(fs);
-
+	free(workers);
 	debug_print("%sServer Exited.%s\n", "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", "    ");
 	exit(EXIT_SUCCESS);
 }
@@ -287,5 +287,7 @@ int main(int argc, char* argv[]) {
 	inits();
 	connections();
 
+	/*servidor sai com o sinal
+	se chegar aqui algo correu mal*/
 	exit(EXIT_FAILURE);
 }
