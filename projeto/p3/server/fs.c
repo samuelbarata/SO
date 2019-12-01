@@ -264,6 +264,9 @@ int writeToFile(tecnicofs *fs, char* fdstr, char* dataInBuffer, client* user){
 		return TECNICOFS_ERROR_FILE_NOT_FOUND;
 	}
 
+	if(!(aux & WRITE))
+		return TECNICOFS_ERROR_PERMISSION_DENIED;
+
 	if(!(user->ficheiros[fd].mode & WRITE)){
 		return TECNICOFS_ERROR_INVALID_MODE;
 	}
@@ -292,16 +295,23 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
 	}
 
+	if(!error_code && !(aux & READ))
+		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
+
 	if(!error_code && !(user->ficheiros[fd].mode & READ)){
 		error_code = TECNICOFS_ERROR_INVALID_MODE;
 	}
 
 	if(error_code){
-		fileContents = realloc(fileContents, CODE_SIZE);
+		free(fileContents);
+		fileContents = safe_malloc(CODE_SIZE, THREAD);
+		bzero(fileContents, CODE_SIZE);
 		sprintf(fileContents, "%d", error_code);
 		return fileContents;
 	}
-	ret = safe_malloc(CODE_SIZE+cmp, THREAD);
+	ret = safe_malloc(3*CODE_SIZE+cmp, THREAD);
+	bzero(ret, 3*CODE_SIZE+cmp);
+	error_code=strlen(fileContents);
 	sprintf(ret, "%d %s", error_code, fileContents);
 	free(fileContents);
 	return ret;

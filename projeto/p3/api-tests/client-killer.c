@@ -110,7 +110,7 @@ void user(char* sock){
 	fd = tfsOpen("abc", RW);
 	assert(fd>=0);
 	pauser(sockfd);
-	assert(tfsWrite(fd, "ola",0)==TECNICOFS_ERROR_FILE_NOT_FOUND);
+	assert(tfsWrite(fd, "ola",0)==0);
 
 
 	assert(tfsUnmount() == 0);
@@ -134,10 +134,10 @@ void other(char* sock){
 
 	pauser(sockfd);
 
-	assert(tfsRead(0, buffer, 0)==TECNICOFS_ERROR_FILE_NOT_FOUND);				//ler ficheiro aberto e apagado
-	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
+	assert(tfsRead(0, buffer, 0) == 0);											//ler ficheiro aberto e renamed
+	fd = tfsOpen("k", WRITE);													//abrir ficheiro aberto
 	assert(fd>=0);
-	assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
+	//assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
 	assert(tfsClose(fd)==0);													//fechar ficheiro certo
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
 	printf("%d", fd);

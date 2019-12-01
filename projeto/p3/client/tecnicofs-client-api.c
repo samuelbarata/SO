@@ -82,14 +82,15 @@ int tfsRead(int fd, char *buffer, int len){
 	sprintf(msg, "%c %d %d", 'l',fd, len);
 	
 	output = safe_malloc(len, MAIN);
+	bzero(output, len);
 	res = sendMsg(msg, output, len);
+
 	free(msg);	
-	if(res != 0){
+	if(res <= 0){
 		free(output);
 		return res;
 	}
-	res = strlen(output);
-	if(buffer)
+	if(buffer && res>=2)
 		strncpy(buffer, output, res);
 	
 	free(output);
@@ -130,7 +131,7 @@ int tfsMount(char * address){
 	if(connect(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
 
-	return EXIT_SUCCESS;
+	return 0;
 
 }
 
@@ -161,14 +162,17 @@ int sendMsg(char* msg, char* res, int len){
 		len=MAX_INPUT_SIZE;
 
 	recvline = safe_malloc(len, MAIN);
-	bzero(recvline, MAX_INPUT_SIZE);
-	n = read(sockfd, recvline, MAX_INPUT_SIZE);
+	bzero(recvline, len);
+	n = read(sockfd, recvline, len);
+	debug_print("\t\t%s\n", recvline);
 	if(n==0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
 	else if (n<0)
 		return TECNICOFS_ERROR_OTHER;
-	debug_print("\t\t%s\n", recvline);
+	
+	
 	sscanf(recvline, "%d %s", &n, res);
+
 	free(recvline);
 	return n;
 }
