@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef enum origin {MAIN, THREAD} origin;
+typedef enum origin {IGNORE, MAIN, THREAD} origin;
 
 void terminate(origin _origin);
 void *safe_malloc(size_t __size, origin _origin);
@@ -24,5 +24,6 @@ void safe_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 void safe_sigmask(int how, const sigset_t *set, sigset_t *oldset);
 int safe_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 void safe_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
+void safe_pthread_join(pthread_t, void *_Nullable, origin _origin);
 
 #endif
