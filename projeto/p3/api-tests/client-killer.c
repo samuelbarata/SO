@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 		bzero(buffer, 100);
 		for(int i = 0;i<TESTES;i++){
 			strncpy(buffer, testes[i], 99);
-			system(buffer);
+			assert(system(buffer)==0);
 		}
 		fprintf(stdout,"Open a terminal and run this file as root while leaving this one open\nsudo %s %s\n", argv[0], argv[1]);
 		fflush(stdout);
@@ -134,10 +134,10 @@ void other(char* sock){
 
 	pauser(sockfd);
 
-	assert(tfsRead(0, NULL, 0)==TECNICOFS_ERROR_FILE_NOT_FOUND);				//ler ficheiro aberto e apagado
+	assert(tfsRead(0, buffer, 0)==TECNICOFS_ERROR_FILE_NOT_FOUND);				//ler ficheiro aberto e apagado
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
 	assert(fd>=0);
-	assert(tfsRead(fd, NULL, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
+	assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
 	assert(tfsClose(fd)==0);													//fechar ficheiro certo
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
 	printf("%d", fd);

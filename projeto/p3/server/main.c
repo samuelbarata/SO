@@ -211,8 +211,8 @@ void *newClient(void* cli){
 			break;
 		}
 	}
-
 	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
+	close(cliente->socket);
 	free(cliente);
 	return NULL;
 }

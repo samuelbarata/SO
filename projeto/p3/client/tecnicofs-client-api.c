@@ -89,7 +89,8 @@ int tfsRead(int fd, char *buffer, int len){
 		return res;
 	}
 	res = strlen(output);
-	strncpy(buffer, output, res);
+	if(buffer)
+		strncpy(buffer, output, res);
 	
 	free(output);
 	return res;

@@ -276,13 +276,13 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	int fd = atoi(fdstr), error_code = 0, aux;
 	int cmp = atoi(len);
 	char *fileContents=NULL, *ret;
-	bzero(fileContents, cmp);
 	
 	if(user->ficheiros[fd].inumber==FILE_CLOSED)
 		error_code = TECNICOFS_ERROR_FILE_NOT_OPEN;
 	if(!error_code){
 		cmp = cmp<=0 ? 1 : cmp;
 		fileContents=safe_malloc(cmp, THREAD);
+		bzero(fileContents, cmp);
 		aux = checkUserPerms(user, user->ficheiros[fd].inumber, fileContents, cmp-1);
 		if(aux<0)
 			error_code = aux;
@@ -297,12 +297,13 @@ char* readFromFile(tecnicofs *fs, char* fdstr, char* len, client* user){
 	}
 
 	if(error_code){
-		free(fileContents);
+		fileContents = realloc(fileContents, CODE_SIZE);
 		sprintf(fileContents, "%d", error_code);
 		return fileContents;
 	}
 	ret = safe_malloc(CODE_SIZE+cmp, THREAD);
 	sprintf(ret, "%d %s", error_code, fileContents);
+	free(fileContents);
 	return ret;
 }
 
