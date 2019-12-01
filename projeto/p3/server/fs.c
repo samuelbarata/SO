@@ -125,21 +125,17 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index1 = hash(newName, numberBuckets);
 	int error_code=0, extendedPermissions, inumber=-1;
 	sync_rdlock(&(fs->bstLock[index0]));
-	node* searchNode = search(fs->bstRoot[index0], name);
-	
-	if(!searchNode)
-		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
-
-	if(!error_code)
-		extendedPermissions = checkUserPerms(user , searchNode->inumber,TRUE,NULL,0);
-
+	node *searchNode1, *searchNode = search(fs->bstRoot[index0], name);
 	sync_unlock(&(fs->bstLock[index0]));
-	if(!(extendedPermissions & USER_IS_OWNER) && !error_code)
-		error_code = TECNICOFS_ERROR_PERMISSION_DENIED;
 
-	if(error_code)
-		return error_code;
+	if(!searchNode)
+		return TECNICOFS_ERROR_FILE_NOT_FOUND;
 	
+	extendedPermissions = checkUserPerms(user , searchNode->inumber,TRUE,NULL,0);
+
+	if(!(extendedPermissions & USER_IS_OWNER))
+		return TECNICOFS_ERROR_PERMISSION_DENIED;
+
 	if(index0!=index1)
 		for(int i=0, unlocked=TRUE; unlocked; usleep(rand()%100 * MINGUA_CONSTANT*i*i), i++){	//devolve valor  [0, 0.1] * i^2
 			unlocked=TRUE;
@@ -153,13 +149,19 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	else
 		sync_wrlock(&(fs->bstLock[index1]));
 
-	if(!searchNode){
+	searchNode = search(fs->bstRoot[index0], name);
+	searchNode1 = search(fs->bstRoot[index1], newName);
+	if(!searchNode)
 		error_code = TECNICOFS_ERROR_FILE_NOT_FOUND;
+	else if(searchNode1)
+		error_code = TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
+	if(error_code){
 		sync_unlock(&(fs->bstLock[index1]));
 		if(index0!=index1)
 			sync_unlock(&(fs->bstLock[index0]));
 		return error_code;
 	}
+
 	if(!(extendedPermissions & OPEN_OTHER))	//ninguem tem ficheiro aberto; inode pode ser mantido
 		inumber = searchNode->inumber;
 	else{		//criar novo inode
@@ -168,7 +170,6 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	
 	fs->bstRoot[index0] = remove_item(fs->bstRoot[index0], name);			//remove
 	fs->bstRoot[index1] = insert(fs->bstRoot[index1], newName, inumber);	//adiciona
-	
 	
 	if(extendedPermissions&OPEN_USER){	//altera nome ficheiro aberto
 		sync_wrlock(&user->lock);
