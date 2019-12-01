@@ -22,15 +22,12 @@
 
 char* global_SocketName = NULL;
 char* global_outputFile = NULL;
-int numberBuckets = 0;
+int numberBuckets;
 int sockfd;						//socket servidor
 pthread_t* workers=NULL;		//ligacoes existentes
 client* clients[MAX_CLIENTS];	//array clients
-
 FILE* outputFp=NULL;			//ficheiro de output do server
-
 sigset_t set;					//sinais a ignorar pelas threads
-
 tecnicofs* fs;					//filesystem
 TIMER_T startTime, stopTime;
 
@@ -65,6 +62,10 @@ FILE * openOutputFile() {
 	return fp;
 }
 
+/**
+ * Recebe comando e cliente que executa o pedido
+ * Devolve a mensagem a ser enviada para o cliente
+*/
 char* applyCommand(char* command, client* user){
 	char token;
 	char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
@@ -84,7 +85,8 @@ char* applyCommand(char* command, client* user){
 		return res;
 	}
 
-	switch(token){  //verificação erro comandos
+	//verificação erro comandos
+	switch(token){
 		case 'r':
 		case 'l':
 		case 'o':
@@ -107,7 +109,7 @@ char* applyCommand(char* command, client* user){
 		}
 	}
 
-	if(code == INT_MAX)
+	if(code == INT_MAX)	//n ocorreu erro
 		switch (token) {
 			case 'c':
 				code= create(fs, arg1, user, permConv(arg2));
@@ -119,7 +121,8 @@ char* applyCommand(char* command, client* user){
 				code= reName(fs, arg1, arg2, user);
 				break;
 			case 'l':
-				res= readFromFile(fs, arg1, arg2, user);
+				//devolve ja a mensagem organizada
+				return readFromFile(fs, arg1, arg2, user);
 				break;
 			case 'o':
 				code= openFile(fs, arg1, arg2, user);
@@ -137,14 +140,15 @@ char* applyCommand(char* command, client* user){
 			}
 		}
 
-	if(code == INT_MAX)
-		return res;
-
+	//grava o codigo para string
 	res = safe_malloc(CODE_SIZE, THREAD);
 	sprintf(res, "%d", code);
 	return res;
 }
 
+/**
+ * Inicializa o servidor
+*/
 void inits(){ 
 	sigemptyset(&set);
 	sigaddset(&set, SIGINT);
@@ -156,10 +160,10 @@ void inits(){
 
 	srand(time(NULL));
 
-	/* Cria socket stream */
+	//Cria socket stream
 	sockfd = safe_socket(AF_UNIX, SOCK_STREAM, 0);
 
-	/*Elimina o nome, para o caso de já existir.*/
+	//Elimina o nome, para o caso de já existir.
 	unlink(global_SocketName);
 
 	bzero((char *)&serv_addr, sizeof(serv_addr));
@@ -202,7 +206,7 @@ void *newClient(void* cli){
 		n = dprintf(cliente->socket, "%s", res);
 		free(res);
 		if(n < 0){ //Error
-			perror("dprintf");
+			perror("writing to socket");
 			break;
 		}
 	}
@@ -251,6 +255,10 @@ void connections(){
 	raise(SIGINT);
 }
 
+
+/**
+ * Terminação do servidor
+*/
 void exitServer(){
 	debug_print("\b\bExitting Server...");
 	close(sockfd);		//não deixa receber mais ligações
