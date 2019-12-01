@@ -11,6 +11,7 @@ core
 *.out
 output
 .gdb_history
+proj.zip
 
 #exec:
 foo*
@@ -19,7 +20,8 @@ test
 tecnicofs-mutex
 tecnicofs-nosync
 tecnicofs-rwlock
-client-api-test-create.sh
-client-api-test-delete.sh
-client-api-test-read.sh
-client-api-test-success.sh
+client-api-test-create
+client-api-test-delete
+client-api-test-read
+client-api-test-success
+client-killer
