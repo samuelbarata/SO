@@ -196,10 +196,10 @@ int inode_set(int inumber, char *fileContents, int len){
 }
 
 
-int inode_open(int inumber){
+void inode_open(int inumber){
 	inode_table[inumber].count++;
 }
-int inode_close(int inumber){
+void inode_close(int inumber){
 	inode_table[inumber].count--;
 	if(inode_table[inumber].count == 0 && inode_table[inumber].deleted){
 		inode_delete(inumber);

@@ -40,16 +40,14 @@ void free_tecnicofs(tecnicofs* fs){
 */
 int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	int index = hash(name, numberBuckets);
-	int error_code = 0;
-
-	sync_rwlock(&(fs->bstLock[index]));
+	sync_wrlock(&(fs->bstLock[index]));
 	int inumber = lookup(fs, name);
 
 	if(inumber != TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
 		return TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
 	}
-	if((perms[0] | perms[1]) && ~RW){
+	if((perms[0] | perms[1]) & ~RW){
 		free(perms);
 		sync_unlock(&(fs->bstLock[index]));
 		return TECNICOFS_ERROR_INVALID_PERMISSION;
@@ -117,7 +115,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	int index0 = hash(name, numberBuckets);
 	int index1 = hash(newName, numberBuckets);
-	int error_code=0, cheker, inumber=-1;
+	int error_code=0, cheker;
 	sync_rdlock(&(fs->bstLock[index0]));
 	int inumber0 = lookup(fs, name);
 	sync_unlock(&(fs->bstLock[index0]));
@@ -150,8 +148,8 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	else
 		sync_wrlock(&(fs->bstLock[index1]));
 
-	int inumber0 = lookup(fs, name);
-	int inumber1 = lookup(fs, newName);
+	inumber0 = lookup(fs, name);
+	inumber1 = lookup(fs, newName);
 	if(inumber0 < 0)
 		error_code = inumber0;	//file not found
 	else if(inumber1>=0)
@@ -344,7 +342,6 @@ permission *permConv(char* perms){
  * space to open more files			0b01000000
  */
 int checkUserPerms(client* cliente , int inumber ,char* fileContent, int len){
-	uid_t self = cliente->uid;
 	uid_t owner;
 	permission ownerPerm, othersPerm;
 	int res=0b00000000, aux = 0b00000000, deleted;

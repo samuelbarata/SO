@@ -4,7 +4,7 @@
 #ifndef BST_H
 #define BST_H
 #include <stdio.h>
-#include "../globals.h"
+#include "../lib/globals.h"
 
 
 typedef struct node {

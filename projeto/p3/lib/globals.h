@@ -27,11 +27,9 @@
 
 #include <sys/types.h>
 #include <stdlib.h>
-#include "tecnicofs-api-constants.h"
+#include "../tecnicofs-api-constants.h"
 
 #include "sync.h"
-
-#include "lib/sync.h"
 
 typedef struct ficheiro{
 	int inumber;

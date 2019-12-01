@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
-#include "../globals.h"
+#include "../lib/globals.h"
 #include "../lib/safe.h"
 
 int sockfd=FILE_CLOSED;
