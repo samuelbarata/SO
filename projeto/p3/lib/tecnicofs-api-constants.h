@@ -33,5 +33,6 @@ typedef enum permission { NONE, WRITE, READ, RW } permission;
 #define TECNICOFS_INVALID_FD				-11
 #define TECNICOFS_ERROR_MAXED_FILES			-11
 #define TECNICOFS_ERROR_FILE_RENAMED		-5
+#define TECNICOFS_ERROR_INVALID_COMMAND		-11
 
 #endif /* TECNICOFS_API_CONSTANTS_H */

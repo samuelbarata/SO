@@ -92,19 +92,19 @@ char* applyCommand(char* command, client* user){
 		case 'w':
 			if(!strcmp(arg2, "")){
 				fprintf(stderr,"Error: could not apply command %c\n", token);
-				code= TECNICOFS_ERROR_OTHER;
+				code= TECNICOFS_ERROR_INVALID_COMMAND;
 			}
 		case 'c':
 		case 'x':
 		case 'd':
 			if(!strcmp(arg1, "")){
 				fprintf(stderr,"Error: could not apply command %c\n", token);
-				code= TECNICOFS_ERROR_OTHER;
+				code= TECNICOFS_ERROR_INVALID_COMMAND;
 			}
 			break;
 		default: { /* error */
 			fprintf(stderr,"Error: could not apply command %c\n", token);
-			code= TECNICOFS_ERROR_OTHER;
+			code= TECNICOFS_ERROR_INVALID_COMMAND;
 		}
 	}
 
@@ -135,7 +135,7 @@ char* applyCommand(char* command, client* user){
 				
 			default: { /* error */
 				fprintf(stderr,"Error: could not apply command %c\n", token);
-				code= TECNICOFS_ERROR_OTHER;
+				code= TECNICOFS_ERROR_INVALID_COMMAND;
 			}
 		}
 
