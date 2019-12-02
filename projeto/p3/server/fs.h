@@ -5,7 +5,7 @@
 #include "../lib/globals.h"
 #include "../lib/bst.h"
 #include "../lib/sync.h"
-#include "../tecnicofs-api-constants.h"
+#include "../lib/tecnicofs-api-constants.h"
 
 typedef struct tecnicofs {
 	node** bstRoot;
@@ -13,7 +13,6 @@ typedef struct tecnicofs {
 } tecnicofs;
 
 extern int numberBuckets;
-extern client* clients[MAX_CLIENTS];
 
 tecnicofs* new_tecnicofs();
 void free_tecnicofs(tecnicofs* fs);

@@ -25,7 +25,6 @@ char* global_outputFile = NULL;
 int numberBuckets;
 int sockfd;						//socket servidor
 pthread_t* workers=NULL;		//ligacoes existentes
-client *clients[MAX_CLIENTS];				//array clients
 FILE* outputFp=NULL;			//ficheiro de output do server
 sigset_t set;					//sinais a ignorar pelas threads
 tecnicofs* fs;					//filesystem
@@ -156,8 +155,6 @@ void inits(){
 	struct sockaddr_un serv_addr;
 	int servlen;
 
-	bzero(clients, sizeof(client*)*MAX_CLIENTS);
-
 	srand(time(NULL));
 
 	//Cria socket stream
@@ -244,7 +241,6 @@ void connections(){
 			cliente->ficheiros[i].mode = NONE;
 		}
 
-		clients[nClients]=cliente;		//adicionar cliente array global de clients
 		safe_pthread_create(&workers[nClients], NULL, newClient, (void*)cliente);	//iniciar threas clientes
 	}
 	fprintf(stderr, "Max client number reached\n");

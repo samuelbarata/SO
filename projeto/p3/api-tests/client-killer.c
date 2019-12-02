@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include "../tecnicofs-api-constants.h"
+#include "../lib/tecnicofs-api-constants.h"
 #include "../client/tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>

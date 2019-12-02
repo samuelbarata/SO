@@ -27,7 +27,7 @@
 
 #include <sys/types.h>
 #include <stdlib.h>
-#include "../tecnicofs-api-constants.h"
+#include "tecnicofs-api-constants.h"
 
 #include "sync.h"
 

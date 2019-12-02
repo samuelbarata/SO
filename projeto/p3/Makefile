@@ -15,7 +15,7 @@ TARGETS	= tecnicofs-rwlock
 API 	= client/tecnicofs-client-api.o
 CLIENTS	= client-api-test-create client-api-test-delete client-api-test-read client-api-test-success client-killer
 
-.PHONY: all clean debug runs runc cleaner clients zip
+.PHONY: all clean debug runs runc cleaner clients zip valgrind
 
 #compila server + API
 all: $(TARGETS) $(API)
@@ -41,23 +41,23 @@ lib/bst-rwlock.o: CFLAGS+=-DRWLOCK
 lib/bst-rwlock.o: lib/bst.c lib/bst.h
 
 server/fs-rwlock.o: CFLAGS+=-DRWLOCK
-server/fs-rwlock.o: server/fs.c server/fs.h lib/bst.h lib/hash.h lib/globals.h
+server/fs-rwlock.o: server/fs.c server/fs.h lib/bst.h lib/hash.h lib/globals.h lib/tecnicofs-api-constants.h
 
 lib/sync-rwlock.o: CFLAGS+=-DRWLOCK
 lib/sync-rwlock.o: lib/sync.c lib/sync.h lib/globals.h
 
 server/main-rwlock.o: CFLAGS+=-DRWLOCK
-server/main-rwlock.o: server/main.c server/fs.h lib/safe.h lib/bst.h lib/globals.h lib/timer.h lib/sync.h lib/hash.h lib/inodes.h tecnicofs-api-constants.h
+server/main-rwlock.o: server/main.c server/fs.h lib/safe.h lib/bst.h lib/globals.h lib/timer.h lib/sync.h lib/hash.h lib/inodes.h lib/tecnicofs-api-constants.h
 
 tecnicofs-rwlock: lib/safe.o lib/bst-rwlock.o server/fs-rwlock.o lib/sync-rwlock.o server/main-rwlock.o lib/hash.o lib/inodes.o
 
-client/tecnicofs-client-api.o: client/tecnicofs-client-api.c lib/globals.h lib/safe.h client/tecnicofs-client-api.h tecnicofs-api-constants.h
+client/tecnicofs-client-api.o: client/tecnicofs-client-api.c lib/globals.h lib/safe.h client/tecnicofs-client-api.h lib/tecnicofs-api-constants.h
 
-client-api-test-create: api-tests/client-api-test-create.c
-client-api-test-delete: api-tests/client-api-test-delete.c
-client-api-test-read: api-tests/client-api-test-read.c
-client-api-test-success: api-tests/client-api-test-success.c
-client-killer: api-tests/client-killer.c
+client-api-test-create: api-tests/client-api-test-create.c lib/tecnicofs-api-constants.h
+client-api-test-delete: api-tests/client-api-test-delete.c lib/tecnicofs-api-constants.h
+client-api-test-read: api-tests/client-api-test-read.c lib/tecnicofs-api-constants.h
+client-api-test-success: api-tests/client-api-test-success.c lib/tecnicofs-api-constants.h
+client-killer: api-tests/client-killer.c lib/tecnicofs-api-constants.h
 
 %.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -75,10 +75,6 @@ runs: $(TARGETS)
 	./tecnicofs-rwlock /tmp/mySocket myout.out 2
 
 runc: $(API) $(CLIENTS)
-	#./client-api-test-create /tmp/mySocket
-	#./client-api-test-delete /tmp/mySocket
-	#./client-api-test-read /tmp/mySocket
-	#./client-api-test-success /tmp/mySocket
 	./client-killer /tmp/mySocket
 
 debug: CFLAGS+=-DDEBUG
@@ -86,3 +82,6 @@ debug: clean all $(CLIENTS)
 
 zip: cleaner
 	zip proj.zip *.c *.h lib/*.c lib/*.h client/*.c client/*.h server/*.c server/*.h Makefile
+
+valgrind: all
+	valgrind --leak-check=full  ./tecnicofs-rwlock /tmp/mySocket myout.out 3
