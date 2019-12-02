@@ -22,8 +22,9 @@
 #define OPEN_USER_WRITE		0b00000001000
 #define ESPACO_AVAILABLE	0b00000010000
 #define USER_IS_OWNER		0b00000100000
-#define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
 #define FILE_DELETED		0b00001000000
+#define	RENAMED				0b00010000000
+#define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
 
 #include <sys/types.h>
 #include <stdlib.h>
@@ -32,6 +33,7 @@
 #include "sync.h"
 
 typedef struct ficheiro{
+	char *filename;
 	int inumber;
 	permission mode;
 } ficheiro;

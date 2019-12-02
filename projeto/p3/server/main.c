@@ -210,7 +210,7 @@ void *newClient(void* cli){
 	}
 	debug_print("EXIT CLIENT: %02d:%d\n",cliente->socket,cliente->uid);
 	close(cliente->socket);
-	free(cliente);
+	free_cliente(cliente);
 	return NULL;
 }
 
@@ -239,6 +239,7 @@ void connections(){
 		for(int i = 0; i < MAX_OPEN_FILES; i++){	//init empty file array
 			cliente->ficheiros[i].inumber = FILE_CLOSED;
 			cliente->ficheiros[i].mode = NONE;
+			cliente->ficheiros[i].filename = NULL;
 		}
 
 		safe_pthread_create(&workers[nClients], NULL, newClient, (void*)cliente);	//iniciar threas clientes

@@ -30,5 +30,7 @@ permission *permConv(char* perms);	//recebe string com permissões; devolve arra
 int checkUserPerms(client* , int, char*, int);
 int ficheiroApagadoChecker(tecnicofs *fs, client *user, int fd, int checker);
 void free_file(client* user, int fd);
+int fileRenamed(tecnicofs* fs, client* user, int fd);
+void free_cliente(client* cliente);
 
 #endif /* FS_H */
