@@ -6,8 +6,27 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
-#include "../lib/globals.h"
-#include "../lib/safe.h"
+
+#define FILE_CLOSED		-1
+#define MAX_INPUT_SIZE	1024
+#ifdef DEBUG
+	#define DEBUG_TEST	1
+#else
+	#define DEBUG_TEST	0
+#endif
+
+/*Prints debug information to stdout
+Uses similar syntax to fprintf*/
+#define debug_print(...) do { if (DEBUG_TEST) fprintf(stdout, __VA_ARGS__);fflush(stdout);} while (0)
+void *safe_malloc(size_t __size){
+	void* p;
+	p = malloc(__size);
+	if(!p){
+		perror("malloc failed");
+		exit(EXIT_FAILURE);
+	}
+	return p;
+}
 
 int sockfd=FILE_CLOSED;
 int sendMsg(char* msg, char* res, int len);
@@ -17,7 +36,7 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(strlen(filename)+6), MAIN);
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+6));
 	sprintf(msg, "%c %s %d%d", 'c',filename, ownerPermissions, othersPermissions);
 	res = sendMsg(msg, NULL,0);
 	free(msg);
@@ -29,7 +48,7 @@ int tfsDelete(char *filename){
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(strlen(filename)+3), MAIN);
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+3));
 	sprintf(msg, "%c %s", 'd',filename);
 	res = sendMsg(msg, NULL,0);
 	free(msg);
@@ -41,7 +60,7 @@ int tfsRename(char *filenameOld, char *filenameNew){
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4), MAIN);
+	msg = safe_malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4));
 	sprintf(msg, "%c %s %s", 'r',filenameOld, filenameNew);
 	res = sendMsg(msg, NULL,0);
 	free(msg);
@@ -53,7 +72,7 @@ int tfsOpen(char *filename, permission mode){
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(strlen(filename)+5),MAIN);
+	msg = safe_malloc(sizeof(char)*(strlen(filename)+5));
 	sprintf(msg, "%c %s %d", 'o',filename, mode);
 	res = sendMsg(msg, NULL,0);
 	free(msg);
@@ -65,7 +84,7 @@ int tfsClose(int fd){
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(4), MAIN);
+	msg = safe_malloc(sizeof(char)*(4));
 	sprintf(msg, "%c %d", 'x',fd);
 	res = sendMsg(msg, NULL,0);
 	free(msg);
@@ -78,10 +97,10 @@ int tfsRead(int fd, char *buffer, int len){
 	char *msg, *output;
 	int res;
 
-	msg = safe_malloc(sizeof(char)*(9),MAIN);	//max len = 9999
+	msg = safe_malloc(sizeof(char)*(9));	//max len = 9999
 	sprintf(msg, "%c %d %d", 'l',fd, len);
 	
-	output = safe_malloc(len, MAIN);
+	output = safe_malloc(len);
 	bzero(output, len);
 	res = sendMsg(msg, output, len);
 
@@ -102,7 +121,7 @@ int tfsWrite(int fd, char *buffer, int len){
 		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
-	msg = safe_malloc(sizeof(char)*(6), MAIN);
+	msg = safe_malloc(sizeof(char)*(6));
 	sprintf(msg, "%c %d %s", 'w', fd, buffer);
 	res = sendMsg(msg, NULL, 0);
 	free(msg);
@@ -162,7 +181,7 @@ int sendMsg(char* msg, char* res, int len){
 	else
 		len=MAX_INPUT_SIZE;
 
-	recvline = safe_malloc(len, MAIN);
+	recvline = safe_malloc(len);
 	bzero(recvline, len);
 	n = read(sockfd, recvline, len);
 	debug_print("\t\t%s\n", recvline);

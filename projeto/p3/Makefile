@@ -81,7 +81,6 @@ debug: CFLAGS+=-DDEBUG
 debug: clean all $(CLIENTS)
 
 zip: cleaner
-	zip proj.zip *.c *.h lib/*.c lib/*.h client/*.c client/*.h server/*.c server/*.h Makefile
-
+	zip proj.zip lib/*.c lib/*.h client/*.c client/*.h server/*.c server/*.h server/Makefile
 valgrind: all
 	valgrind --leak-check=full  ./tecnicofs-rwlock /tmp/mySocket myout.out 3
