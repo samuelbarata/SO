@@ -15,30 +15,26 @@
 #define MINGUA_CONSTANT 	0.0001
 #define CODE_SIZE			5
 
-//#define READ				0b000000001
-//#define WRITE				0b000000010
+//#define READ				0b00000000001
+//#define WRITE				0b00000000010
 
 #define OPEN_USER_READ		0b00000000100
 #define OPEN_USER_WRITE		0b00000001000
-#define	OPEN_OTHER_READ		0b00000010000
-#define OPEN_OTHER_WRITE	0b00000100000
-#define ESPACO_AVAILABLE	0b00001000000
-#define USER_IS_OWNER		0b00010000000
-#define OTHER_READ			0b00100000000
-#define OTHER_WRITE			0b01000000000
-#define OTHER_RW			(OTHER_READ | OTHER_WRITE)
+#define ESPACO_AVAILABLE	0b00000010000
+#define USER_IS_OWNER		0b00000100000
+#define FILE_DELETED		0b00001000000
+#define	RENAMED				0b00010000000
 #define OPEN_USER			(OPEN_USER_READ | OPEN_USER_WRITE)
-#define OPEN_OTHER			(OPEN_OTHER_READ | OPEN_OTHER_WRITE)
-#define OPEN_ANY			(OPEN_USER | OPEN_OTHER)
 
 #include <sys/types.h>
 #include <stdlib.h>
 #include "tecnicofs-api-constants.h"
-#include "lib/sync.h"
+
+#include "sync.h"
 
 typedef struct ficheiro{
-	char* key;
-	int fd;
+	char *filename;
+	int inumber;
 	permission mode;
 } ficheiro;
 
@@ -46,7 +42,6 @@ typedef struct client{
 	int socket;
 	uid_t uid;
 	ficheiro ficheiros[MAX_OPEN_FILES];
-	syncMech lock;
 } client;
 
 #ifdef DEBUG

@@ -3,37 +3,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "inodes.h"
-#include "../tecnicofs-api-constants.h"
+#include "globals.h"
 
 inode_t inode_table[INODE_TABLE_SIZE];
 pthread_mutex_t inode_table_lock;
 
 void lock_inode_table(){
-    if(pthread_mutex_lock(&inode_table_lock) != 0){
-        perror("Failed to acquire the i-node table lock.");
-        exit(EXIT_FAILURE);
-    }
+	if(pthread_mutex_lock(&inode_table_lock) != 0){
+		perror("Failed to acquire the i-node table lock.");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void unlock_inode_table(){
-    if(pthread_mutex_unlock(&inode_table_lock) != 0){
-        perror("Failed to release the i-node table lock.");
-        exit(EXIT_FAILURE);
-    }
+	if(pthread_mutex_unlock(&inode_table_lock) != 0){
+		perror("Failed to release the i-node table lock.");
+		exit(EXIT_FAILURE);
+	}
 }
 
 /*
  * Initializes the i-nodes table and the mutex.
  */
 void inode_table_init(){
-    if(pthread_mutex_init(&inode_table_lock, NULL) != 0){
-        perror("Failed to initialize inode table mutex.\n");
-        exit(EXIT_FAILURE);
-    }
-    for(int i = 0; i < INODE_TABLE_SIZE; i++){
-        inode_table[i].owner = FREE_INODE;
-        inode_table[i].fileContent = NULL;
-    }
+	if(pthread_mutex_init(&inode_table_lock, NULL) != 0){
+		perror("Failed to initialize inode table mutex.\n");
+		exit(EXIT_FAILURE);
+	}
+	for(int i = 0; i < INODE_TABLE_SIZE; i++){
+		inode_table[i].owner = FREE_INODE;
+		inode_table[i].fileContent = NULL;
+		inode_table[i].count=0;
+	}
 }
 
 /*
@@ -42,15 +43,15 @@ void inode_table_init(){
  */
 
 void inode_table_destroy(){
-    for(int i = 0; i < INODE_TABLE_SIZE; i++){
-        if(inode_table[i].owner!=FREE_INODE && inode_table[i].fileContent)
-            free(inode_table[i].fileContent);
-    }
-    
-    if(pthread_mutex_destroy(&inode_table_lock) != 0){
-        perror("Failed to destroy inode table mutex.\n");
-        exit(EXIT_FAILURE);
-    }
+	for(int i = 0; i < INODE_TABLE_SIZE; i++){
+		if(inode_table[i].owner!=FREE_INODE && inode_table[i].fileContent)
+			free(inode_table[i].fileContent);
+	}
+
+	if(pthread_mutex_destroy(&inode_table_lock) != 0){
+		perror("Failed to destroy inode table mutex.\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 /*
@@ -64,19 +65,20 @@ void inode_table_destroy(){
  *       -1: if an error occurs
  */
 int inode_create(uid_t owner, permission ownerPerm, permission othersPerm){
-    lock_inode_table();
-    for(int inumber = 0; inumber < INODE_TABLE_SIZE; inumber++){
-        if(inode_table[inumber].owner == FREE_INODE){
-            inode_table[inumber].owner = owner;
-            inode_table[inumber].ownerPermissions = ownerPerm;
-            inode_table[inumber].othersPermissions = othersPerm;
-            inode_table[inumber].fileContent = NULL;
-            unlock_inode_table();
-            return inumber;
-        }
-    }
-    unlock_inode_table();
-    return -1;
+	lock_inode_table();
+	for(int inumber = 0; inumber < INODE_TABLE_SIZE; inumber++){
+		if(inode_table[inumber].owner == FREE_INODE){
+			inode_table[inumber].owner = owner;
+			inode_table[inumber].ownerPermissions = ownerPerm;
+			inode_table[inumber].othersPermissions = othersPerm;
+			inode_table[inumber].fileContent = NULL;
+			inode_table[inumber].deleted = 0;
+			unlock_inode_table();
+			return inumber;
+		}
+	}
+	unlock_inode_table();
+	return -1;
 }
 
 /*
@@ -88,19 +90,21 @@ int inode_create(uid_t owner, permission ownerPerm, permission othersPerm){
  *  -1: if an error occurs
  */
 int inode_delete(int inumber){
-    lock_inode_table();
-    if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
-        printf("inode_delete: invalid inumber");
-        unlock_inode_table();
-        return -1;
-    }
-
-    inode_table[inumber].owner = FREE_INODE;
-    if(inode_table[inumber].fileContent){
-        free(inode_table[inumber].fileContent);
-    }
-    unlock_inode_table();
-    return 0;
+	lock_inode_table();
+	if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
+		printf("inode_delete: invalid inumber");
+		unlock_inode_table();
+		return -1;
+	}
+	inode_table[inumber].deleted=TRUE;
+	if(!inode_table[inumber].count){
+		inode_table[inumber].owner = FREE_INODE;
+		if(inode_table[inumber].fileContent){
+			free(inode_table[inumber].fileContent);
+		}
+	}
+	unlock_inode_table();
+	return 0;
 }
 
 /*
@@ -117,38 +121,40 @@ int inode_delete(int inumber){
  *   -1: if an error occurs
  */
 int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *othersPerm,
-                     char* fileContents, int len){
-    lock_inode_table();
-    if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
-        printf("inode_getValues: invalid inumber %d\n", inumber);
-        unlock_inode_table();
-        return -1;
-    }
+						char* fileContents, int len, int *deleted){
+	lock_inode_table();
+	if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
+		printf("inode_getValues: invalid inumber %d\n", inumber);
+		unlock_inode_table();
+		return -1;
+	}
 
-    if(len < 0){
-        printf("inode_getValues: invalid len %d\n", len);
-        unlock_inode_table();
-        return -1;
-    }
+	if(len < 0){
+		printf("inode_getValues: invalid len %d\n", len);
+		unlock_inode_table();
+		return -1;
+	}
 
-    if(owner)
-        *owner = inode_table[inumber].owner;
+	if(owner)
+		*owner = inode_table[inumber].owner;
 
-    if(ownerPerm)
-        *ownerPerm = inode_table[inumber].ownerPermissions;
+	if(ownerPerm)
+		*ownerPerm = inode_table[inumber].ownerPermissions;
 
-    if(othersPerm)
-        *othersPerm = inode_table[inumber].othersPermissions;
+	if(othersPerm)
+		*othersPerm = inode_table[inumber].othersPermissions;
+	if(deleted)
+		*deleted = inode_table[inumber].deleted ? 1 : 0;
 
-    if(fileContents && len > 0 && inode_table[inumber].fileContent){
-        strncpy(fileContents, inode_table[inumber].fileContent, len);
-        fileContents[len] = '\0';
-        unlock_inode_table();
-        return strlen(fileContents);
-    }
+	if(fileContents && len > 0 && inode_table[inumber].fileContent){
+		strncpy(fileContents, inode_table[inumber].fileContent, len);
+		fileContents[len] = '\0';
+		unlock_inode_table();
+		return strlen(fileContents);
+	}
 
-    unlock_inode_table();
-    return 0;
+	unlock_inode_table();
+	return 0;
 }
 
 
@@ -163,27 +169,36 @@ int inode_get(int inumber,uid_t *owner, permission *ownerPerm, permission *other
  *   -1: if an error occurs
  */
 int inode_set(int inumber, char *fileContents, int len){
-    lock_inode_table();
-    if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
-        printf("inode_setFileContent: invalid inumber");
-        unlock_inode_table();
-        return -1;
-    }
+	lock_inode_table();
+	if((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].owner == FREE_INODE)){
+		printf("inode_setFileContent: invalid inumber");
+		unlock_inode_table();
+		return -1;
+	}
 
-    if(!fileContents || len < 0 || strlen(fileContents) < len){
-        printf("inode_setFileContent: \
-               fileContents must be non-null && len > 0 && strlen(fileContents) > len");
-        unlock_inode_table();
-        return -1;
-    }
-    
-    if(inode_table[inumber].fileContent)
-        free(inode_table[inumber].fileContent);
+	if(!fileContents || len < 0 || strlen(fileContents) < len){
+		printf("inode_setFileContent: \
+				fileContents must be non-null && len > 0 && strlen(fileContents) > len");
+		unlock_inode_table();
+		return -1;
+	}
 
-    inode_table[inumber].fileContent = malloc(sizeof(char) * (len+1));
-    strncpy(inode_table[inumber].fileContent, fileContents, len);
-    inode_table[inumber].fileContent[len] = '\0';
+	if(inode_table[inumber].fileContent)
+		free(inode_table[inumber].fileContent);
 
-    unlock_inode_table();
-    return 0;
+	inode_table[inumber].fileContent = malloc(sizeof(char) * (len+1));
+	strncpy(inode_table[inumber].fileContent, fileContents, len);
+	inode_table[inumber].fileContent[len] = '\0';
+
+	unlock_inode_table();
+	return 0;
+}
+
+void inode_open(int inumber){
+	inode_table[inumber].count++;
+}
+void inode_close(int inumber){
+	inode_table[inumber].count--;
+	if(inode_table[inumber].count == 0 && inode_table[inumber].deleted)
+		inode_delete(inumber);
 }

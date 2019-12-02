@@ -48,6 +48,13 @@ node* search(node* p, char* key)
         return p;
 }
 
+node *inumberLookup(node *p, int inumber){
+    if(!p || p->inumber == inumber)
+        return p;
+    node *v=inumberLookup(p->left, inumber);
+    return v ? v : inumberLookup(p->right, inumber);
+}
+
 node* insert(node* p, char* key, int inumber)
 {
     insertDelay(DELAY);

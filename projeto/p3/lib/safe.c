@@ -2,6 +2,8 @@
 
 void terminate(origin _origin){
 	switch (_origin){
+	case IGNORE:
+		break;
 	case MAIN:
 		raise(SIGINT);
 		break;
@@ -72,6 +74,14 @@ void safe_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*
 	if (aux){
 		perror("Can't create thread");
 		terminate(MAIN);
+	}
+}
+
+void safe_pthread_join(pthread_t thread, void *p, origin _origin){
+	int aux = pthread_join(thread, p);
+	if(aux){
+		perror("Can't join thread");
+		terminate(_origin);
 	}
 }
 

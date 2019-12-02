@@ -1,7 +1,7 @@
 #ifndef TECNICOFS_CLIENT_API_H
 #define TECNICOFS_CLIENT_API_H
 
-#include "../tecnicofs-api-constants.h"
+#include "../lib/tecnicofs-api-constants.h"
 
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions);
 int tfsDelete(char *filename);

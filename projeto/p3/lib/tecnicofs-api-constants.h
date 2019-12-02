@@ -27,5 +27,18 @@ typedef enum permission { NONE, WRITE, READ, RW } permission;
 #define TECNICOFS_ERROR_INVALID_MODE -10
 /* Generic error */
 #define TECNICOFS_ERROR_OTHER -11
+/* Permission is not a valid permission */
+#define TECNICOFS_ERROR_INVALID_PERMISSION	-11
+/* The given file descriptor is not valid */
+#define TECNICOFS_INVALID_FD				-11
+/* The FS has no space for more files */
+#define TECNICOFS_ERROR_MAXED_FILES			-11
+/* The Open file was renamed and no longer exists */
+#define TECNICOFS_ERROR_FILE_RENAMED		-5
+/* The given command is not valid */
+#define TECNICOFS_ERROR_INVALID_COMMAND		-11
+
+
+#define TECNICOFS_DEFAULT_NO_ERROR			-69
 
 #endif /* TECNICOFS_API_CONSTANTS_H */

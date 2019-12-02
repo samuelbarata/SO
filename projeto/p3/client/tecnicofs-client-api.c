@@ -6,13 +6,15 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include "tecnicofs-client-api.h"
-#include "../globals.h"
+#include "../lib/globals.h"
 #include "../lib/safe.h"
 
-int sockfd=-1;
+int sockfd=FILE_CLOSED;
 int sendMsg(char* msg, char* res, int len);
 
 int tfsCreate(char *filename, permission ownerPermissions, permission othersPermissions){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(strlen(filename)+6), MAIN);
@@ -23,6 +25,8 @@ int tfsCreate(char *filename, permission ownerPermissions, permission othersPerm
 }
 
 int tfsDelete(char *filename){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(strlen(filename)+3), MAIN);
@@ -33,6 +37,8 @@ int tfsDelete(char *filename){
 }
 
 int tfsRename(char *filenameOld, char *filenameNew){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(strlen(filenameOld)+strlen(filenameNew)+4), MAIN);
@@ -43,6 +49,8 @@ int tfsRename(char *filenameOld, char *filenameNew){
 }
 
 int tfsOpen(char *filename, permission mode){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(strlen(filename)+5),MAIN);
@@ -53,6 +61,8 @@ int tfsOpen(char *filename, permission mode){
 }
 
 int tfsClose(int fd){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(4), MAIN);
@@ -63,6 +73,8 @@ int tfsClose(int fd){
 }
 
 int tfsRead(int fd, char *buffer, int len){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char *msg, *output;
 	int res;
 
@@ -70,20 +82,24 @@ int tfsRead(int fd, char *buffer, int len){
 	sprintf(msg, "%c %d %d", 'l',fd, len);
 	
 	output = safe_malloc(len, MAIN);
+	bzero(output, len);
 	res = sendMsg(msg, output, len);
+
 	free(msg);	
-	if(res != 0){
+	if(res <= 0){
 		free(output);
 		return res;
 	}
-	res = strlen(output);
-	strncpy(buffer, output, res);
+	if(buffer && res>=2)
+		strncpy(buffer, output, res);
 	
 	free(output);
 	return res;
 }
 
 int tfsWrite(int fd, char *buffer, int len){
+	if(sockfd==FILE_CLOSED)
+		return TECNICOFS_ERROR_NO_OPEN_SESSION;
 	char* msg;
 	int res;
 	msg = safe_malloc(sizeof(char)*(6), MAIN);
@@ -94,7 +110,8 @@ int tfsWrite(int fd, char *buffer, int len){
 }
 
 int tfsMount(char * address){
-	// para o cliente ligar ao server
+	if(sockfd>=0)
+		return TECNICOFS_ERROR_OPEN_SESSION;
 	int servlen;
 	struct sockaddr_un serv_addr;
 
@@ -114,13 +131,13 @@ int tfsMount(char * address){
 	if(connect(sockfd, (struct sockaddr*) &serv_addr, servlen) < 0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
 
-	return EXIT_SUCCESS;
+	return 0;
 
 }
 
 int tfsUnmount(){	
 	int res = close(sockfd);
-	sockfd=-1;
+	sockfd=FILE_CLOSED;
 	return res;
 }
 
@@ -133,9 +150,10 @@ int sendMsg(char* msg, char* res, int len){
 	err = write(sockfd, msg, n);
 	if(err<0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
-	if(err!=n)
+	if(err!=n){
+		perror("write");
 		return TECNICOFS_ERROR_OTHER;
-	
+	}
 	debug_print("%s", msg);
 
 	/* Tenta ler string de sockfd.*/
@@ -145,14 +163,18 @@ int sendMsg(char* msg, char* res, int len){
 		len=MAX_INPUT_SIZE;
 
 	recvline = safe_malloc(len, MAIN);
-	bzero(recvline, MAX_INPUT_SIZE);
-	n = read(sockfd, recvline, MAX_INPUT_SIZE);
+	bzero(recvline, len);
+	n = read(sockfd, recvline, len);
+	debug_print("\t\t%s\n", recvline);
 	if(n==0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
-	else if (n<0)
+	else if (n<0){
+		perror("read");
 		return TECNICOFS_ERROR_OTHER;
-	debug_print("\t\t%s\n", recvline);
+	}
+	
 	sscanf(recvline, "%d %s", &n, res);
+
 	free(recvline);
 	return n;
 }

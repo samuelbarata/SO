@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
-#include "../tecnicofs-api-constants.h"
+#include "../lib/tecnicofs-api-constants.h"
+#include "../lib/globals.h"
 #include "../client/tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +32,7 @@ void post(int fd){
 }
 void pauser(int fd){
 	post(fd);
-	printf("pausing %d\n", contador++);
+	debug_print("pausing %d\n", contador++);
 	wait(fd);
 }
 
@@ -39,7 +40,7 @@ void pauser(int fd){
 void init(){
 	int sockfd;
 	struct sockaddr_un serv_addr;
-    int servlen;
+	int servlen;
 	struct sockaddr_un cli_addr;
 	int clilen = sizeof(cli_addr);
 	sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -64,16 +65,17 @@ void conect(){
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        printf("Usage: %s sock_path\n", argv[0]);
-        exit(0);
-    }
+	if (argc != 2) {
+		printf("Usage: %s sock_path\n", argv[0]);
+		exit(0);
+	}
 	if(getuid()==1000){
+		bzero(buffer, 100);
 		for(int i = 0;i<TESTES;i++){
-			strcpy(buffer, testes[i]);
-			system(buffer);
+			strncpy(buffer, testes[i], 99);
+			assert(system(buffer)==0);
 		}
-		fprintf(stdout,"Open a terminal and run this file as root while leaving this one open\nsudo %s %s", argv[0], argv[1]);
+		fprintf(stdout,"Open a terminal and run this file as root while leaving this one open\nsudo %s %s\n", argv[0], argv[1]);
 		fflush(stdout);
 		init();
 		user(argv[1]);
@@ -96,38 +98,69 @@ void user(char* sock){
 	int sockfd = otherSocket;
 	system("whoami");
 	assert(tfsMount(sock) == 0);
-    assert(tfsCreate("z", RW, RW) == 0);
+	assert(tfsCreate("z", RW, RW) == 0);
 	pauser(sockfd);
 	assert(tfsRename("z", "k")==0);
-	
+
+	assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
+	pauser(sockfd);
+
+	printf("\nteste2\n");
+	assert(tfsMount(sock) == 0);
+	fd = tfsOpen("abc", RW);
+	assert(fd>=0);
+	pauser(sockfd);
+	assert(tfsWrite(fd, "ola",0)==TECNICOFS_ERROR_FILE_RENAMED);
 
 
+	assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
 
-    assert(tfsUnmount() == 0);
 }
+
+
 
 void other(char* sock){
 	int sockfd = serverSocket;
 	system("whoami");
 	assert(tfsMount(sock) == 0);
+	
+	printf("\npausa dramatica bue irritante\n");
+	sleep(2);
+
 	wait(sockfd);
 	assert(tfsCreate("z", RW, NONE) == TECNICOFS_ERROR_FILE_ALREADY_EXISTS);	//criar ficheiro existente
 	assert(tfsOpen("z", RW)==0);												//abrir ficheiro outro user com perms
-	pauser(sockfd);
-	assert(tfsRead(0, NULL, 0)==TECNICOFS_ERROR_FILE_NOT_FOUND);				//ler ficheiro aberto e apagado
-	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
-	assert(fd>=0);
-	assert(tfsRead(fd, NULL, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
 
+	pauser(sockfd);
+
+	assert(tfsRead(0, buffer, 0) == TECNICOFS_ERROR_FILE_RENAMED);				//ler ficheiro aberto e renamed
+	fd = tfsOpen("k", WRITE);													//abrir ficheiro aberto
+	assert(fd>=0);
+	assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo invalido
 	assert(tfsClose(fd)==0);													//fechar ficheiro certo
 	fd = tfsOpen("k", WRITE);													//abrir ficheiro after rename
-	printf("%d", fd);
 	assert(fd>=0);
 	assert(tfsRead(fd, buffer, 0)==TECNICOFS_ERROR_INVALID_MODE);					//ler ficheiro modo errado
-
-
-    assert(tfsUnmount() == 0);
+	assert(tfsUnmount() == 0);
+	fprintf(stdout, "SUCCESS\n");
+	
+	printf("\nteste2\n");
+	assert(tfsMount(sock) == 0);
+	assert(tfsCreate("abc", RW, RW) == 0);
+	
+	pauser(sockfd);
+	
+	fd = tfsOpen("abc", RW);
+	assert(fd>=0);
+	assert(tfsWrite(fd, "ola", 4)==0);
+	assert(tfsRename("abc", "def") == 0);
+	assert(tfsCreate("abc", RW, RW) == 0);
+	
+	post(sockfd);
+	assert(tfsRead(fd,buffer, 4)==3);
+	assert(tfsUnmount() == 0);
 
 	fprintf(stdout, "SUCCESS\n");
-
 }
