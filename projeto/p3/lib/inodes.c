@@ -194,13 +194,11 @@ int inode_set(int inumber, char *fileContents, int len){
 	return 0;
 }
 
-
 void inode_open(int inumber){
 	inode_table[inumber].count++;
 }
 void inode_close(int inumber){
 	inode_table[inumber].count--;
-	if(inode_table[inumber].count == 0 && inode_table[inumber].deleted){
+	if(inode_table[inumber].count == 0 && inode_table[inumber].deleted)
 		inode_delete(inumber);
-	}
 }

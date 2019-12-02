@@ -228,6 +228,7 @@ int openFile(tecnicofs *fs, char* filename,char* modeIn, client* user){
 	if(!error_code){
 		for(i = 0;i<MAX_OPEN_FILES;i++){
 			if(user->ficheiros[i].inumber == FILE_CLOSED){
+				inode_open(inumber);
 				user->ficheiros[i].inumber = inumber;
 				user->ficheiros[i].mode = mode;
 				user->ficheiros[i].filename = safe_strdup(filename, THREAD);
