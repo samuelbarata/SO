@@ -12,7 +12,6 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <limits.h>
 
 #include "../lib/safe.h"
 #include "../lib/timer.h"
@@ -69,7 +68,7 @@ char* applyCommand(char* command, client* user){
 	char token;
 	char arg1[MAX_INPUT_SIZE], arg2[MAX_INPUT_SIZE];
 	char *res=NULL;
-	int code=INT_MAX;
+	int code=TECNICOFS_DEFAULT_NO_ERROR;
 
 	bzero(arg1, MAX_INPUT_SIZE);
 	bzero(arg2, MAX_INPUT_SIZE);
@@ -108,7 +107,7 @@ char* applyCommand(char* command, client* user){
 		}
 	}
 
-	if(code == INT_MAX)	//n ocorreu erro
+	if(code == TECNICOFS_DEFAULT_NO_ERROR)	//n ocorreu erro; pode-se processar comandos
 		switch (token) {
 			case 'c':
 				code= create(fs, arg1, user, permConv(arg2));
@@ -139,7 +138,7 @@ char* applyCommand(char* command, client* user){
 			}
 		}
 
-	//grava o codigo para string
+	//converte o codigo para a mensagem a ser enviada para o cliente
 	res = safe_malloc(CODE_SIZE, THREAD);
 	sprintf(res, "%d", code);
 	return res;
@@ -174,6 +173,9 @@ void inits(){
 }
 
 
+/**
+ * Funcao que processa pedidos do cliente
+*/
 void *newClient(void* cli){
 	safe_sigmask(SIG_SETMASK, &set, NULL);
 
@@ -214,6 +216,9 @@ void *newClient(void* cli){
 	return NULL;
 }
 
+/**
+ * Funcao encarregue de estabelecer ligacoes com clientes
+*/
 void connections(){
 	unsigned int ucred_len;
 	struct ucred ucreds;
@@ -250,7 +255,7 @@ void connections(){
 
 
 /**
- * Terminação do servidor
+ * Terminacao do servidor
 */
 void exitServer(){
 	debug_print("\b\bExitting Server...");

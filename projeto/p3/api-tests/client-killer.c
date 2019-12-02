@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "../lib/tecnicofs-api-constants.h"
+#include "../lib/globals.h"
 #include "../client/tecnicofs-client-api.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +32,7 @@ void post(int fd){
 }
 void pauser(int fd){
 	post(fd);
-	printf("pausing %d\n", contador++);
+	debug_print("pausing %d\n", contador++);
 	wait(fd);
 }
 

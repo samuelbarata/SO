@@ -150,9 +150,10 @@ int sendMsg(char* msg, char* res, int len){
 	err = write(sockfd, msg, n);
 	if(err<0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
-	if(err!=n)
+	if(err!=n){
+		perror("write");
 		return TECNICOFS_ERROR_OTHER;
-	
+	}
 	debug_print("%s", msg);
 
 	/* Tenta ler string de sockfd.*/
@@ -167,9 +168,10 @@ int sendMsg(char* msg, char* res, int len){
 	debug_print("\t\t%s\n", recvline);
 	if(n==0)
 		return TECNICOFS_ERROR_CONNECTION_ERROR;
-	else if (n<0)
+	else if (n<0){
+		perror("read");
 		return TECNICOFS_ERROR_OTHER;
-	
+	}
 	
 	sscanf(recvline, "%d %s", &n, res);
 

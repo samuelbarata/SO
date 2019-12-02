@@ -43,17 +43,20 @@ int create(tecnicofs* fs, char *name,client *user ,permission *perms){
 	sync_wrlock(&(fs->bstLock[index]));
 	int inumber = lookup(fs, name);
 
+	//ficheiro existe?
 	if(inumber != TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
 		free(perms);
 		return TECNICOFS_ERROR_FILE_ALREADY_EXISTS;
 	}
+	//permicoes existem
 	if((perms[0] | perms[1]) & ~RW){
 		sync_unlock(&(fs->bstLock[index]));
 		free(perms);
 		return TECNICOFS_ERROR_INVALID_PERMISSION;
 	}
 
+	//criar
 	inumber = inode_create(user->uid, perms[0], perms[1]);
 	free(perms);
 
@@ -78,6 +81,7 @@ int delete(tecnicofs* fs, char *name, client *user){
 	sync_wrlock(&(fs->bstLock[index]));
 	int inumber = lookup(fs, name);
 
+	//ficheiro existe?
 	if(inumber == TECNICOFS_ERROR_FILE_NOT_FOUND){
 		sync_unlock(&(fs->bstLock[index]));
 		return TECNICOFS_ERROR_FILE_NOT_FOUND;
@@ -89,12 +93,14 @@ int delete(tecnicofs* fs, char *name, client *user){
 		return aux;
 	}
 
+	//user owner?
 	if(!(aux&USER_IS_OWNER)){
 		sync_unlock(&(fs->bstLock[index]));
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 	}
 
-	if(aux & OPEN_USER){		//fecha o ficheiro se estiver aberto pelo utilizador
+	//user aberto?
+	if(aux & OPEN_USER){	//fecha o ficheiro se estiver aberto pelo utilizador
 		int i;
 		for(i = 0; i<MAX_OPEN_FILES; i++)
 			if(user->ficheiros[i].inumber == inumber)
@@ -133,6 +139,7 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 
 	aux = checkUserPerms(user , inumber0,NULL,0);
 
+	//user is owner
 	if(!(aux & USER_IS_OWNER))
 		return TECNICOFS_ERROR_PERMISSION_DENIED;
 
@@ -149,6 +156,7 @@ int reName(tecnicofs* fs, char *name, char *newName, client* user){
 	else
 		sync_wrlock(&(fs->bstLock[index1]));
 
+	//ficheiros ainda/n existem
 	inumber0 = lookup(fs, name);
 	inumber1 = lookup(fs, newName);
 	if(inumber0 < 0)
@@ -427,7 +435,7 @@ void free_file(client* user, int fd){
 }
 
 /**
- * !!DENTRO LOCKS
+ * !! DENTRO RDLOCKS
  * Recebe fs e name
  * devolve inumber correspondente
 */
@@ -455,6 +463,10 @@ node* nodeLookup(tecnicofs *fs, int inumber){
 	return NULL;
 }
 
+/**
+ * verifica se o ficheiro que o cliente esta a tentar aceder ainda existe
+ * ou se foi renomeado
+*/
 int fileRenamed(tecnicofs* fs, client* user, int fd){
 	int index=hash(user->ficheiros[fd].filename, numberBuckets);
 	sync_rdlock(&(fs->bstLock[index]));
@@ -467,6 +479,9 @@ int fileRenamed(tecnicofs* fs, client* user, int fd){
 	return fd;
 }
 
+/**
+ * Liberta um cliente
+*/
 void free_cliente(client* cliente){
 	for(int i = 0; i<MAX_OPEN_FILES; free(cliente->ficheiros[i++].filename));
 	free(cliente);
