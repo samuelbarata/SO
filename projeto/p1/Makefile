@@ -73,4 +73,4 @@ run: all
 	@#make run
 
 irun: all
-	./tecnicofs-mutex inputs/test03.txt myout.out 9 2
+	./tecnicofs-mutex inputs/test3.txt myout.out 9 2 

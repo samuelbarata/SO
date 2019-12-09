@@ -11,6 +11,8 @@
 #include "fs.h"
 #include "lib/hash.h"
 
+
+
 tecnicofs** fs;
 
 FILE *inputfile, *outputfile;
@@ -22,6 +24,8 @@ char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueue = 0;
 
+int sleeptime;
+
 /*Mostra formato esperado de input*/
 static void displayUsage (const char* appName){
     printf("Usage: %s inputfile outputfile numthreads numbuckets\n", appName);
@@ -30,7 +34,7 @@ static void displayUsage (const char* appName){
 
 /*Recebe os argumentos do programa*/
 static void parseArgs (long argc, char* const argv[]){
-    if (argc != 5) {
+    if (argc > 6) { //mudei de 5 para 6
         fprintf(stderr, "Invalid format:\n");
         displayUsage(argv[0]);
     }
@@ -42,6 +46,12 @@ static void parseArgs (long argc, char* const argv[]){
     outputfile = fopen(argv[2], "w");
     numberThreads = atoi(argv[3]);
     numberBuckets = atoi(argv[4]);
+    if (argc == 5){
+        sleeptime = 0;
+    }
+    else{
+        sleeptime = atoi(argv[5]);
+    }
 }
 
 /*se ainda ha espaço no vetor de comandos, adiciona mais um comando*/
@@ -183,6 +193,13 @@ int main(int argc, char* argv[]) {
     struct timeval clock0, clock1;
     //recebe input
     parseArgs(argc, argv);
+
+    //fazer o sleep
+    sleep(sleeptime);
+
+
+
+
     //cria novo fileSystem
     fs = new_tecnicofs();
     //processa o input
