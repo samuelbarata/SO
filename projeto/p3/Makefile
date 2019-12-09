@@ -26,7 +26,7 @@ clients: $(CLIENTS) $(API)
 $(TARGETS):
 	$(LD) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(CLIENTS): lib/safe.o $(API)
+$(CLIENTS): $(API)
 	$(LD) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(API):
@@ -51,7 +51,7 @@ server/main-rwlock.o: server/main.c server/fs.h lib/safe.h lib/bst.h lib/globals
 
 tecnicofs-rwlock: lib/safe.o lib/bst-rwlock.o server/fs-rwlock.o lib/sync-rwlock.o server/main-rwlock.o lib/hash.o lib/inodes.o
 
-client/tecnicofs-client-api.o: client/tecnicofs-client-api.c lib/globals.h lib/safe.h client/tecnicofs-client-api.h lib/tecnicofs-api-constants.h
+client/tecnicofs-client-api.o: client/tecnicofs-client-api.c client/tecnicofs-client-api.h lib/tecnicofs-api-constants.h
 
 client-api-test-create: api-tests/client-api-test-create.c lib/tecnicofs-api-constants.h
 client-api-test-delete: api-tests/client-api-test-delete.c lib/tecnicofs-api-constants.h

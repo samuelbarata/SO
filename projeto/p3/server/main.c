@@ -258,7 +258,7 @@ void connections(){
  * Terminacao do servidor
 */
 void exitServer(){
-	debug_print("\b\bExitting Server...");
+	debug_print("\b\bExitting Server...\n");
 	close(sockfd);		//não deixa receber mais ligações
 
 	for(int i = 0; i<nClients; i++)		//espera que threads acabem os trabalhos dos clientes
@@ -266,12 +266,12 @@ void exitServer(){
 
 	TIMER_READ(stopTime);
 	print_tecnicofs_tree(outputFp, fs);
-	fprintf(outputFp, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+	fprintf(stdout, "TecnicoFS completed in %.4f seconds.\n", TIMER_DIFF_SECONDS(startTime, stopTime));
 	fflush(outputFp);
 	fclose(outputFp);
 	free_tecnicofs(fs);
 	free(workers);
-	debug_print("%sServer Exited.%s\n", "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", "    ");
+	debug_print("Server Exited.\n");
 	exit(EXIT_SUCCESS);
 }
 
