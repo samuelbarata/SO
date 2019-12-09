@@ -48,6 +48,9 @@ clean:
 	@echo Cleaning...
 	@rm -f lib/*.o *.o tecnicofs*
 
+zip:
+	@zip entregar makefile *.c *.h lib/*.c lib/*.h
+
 fullclean:
 	@echo Cleaning...
 	@rm -f lib/*.o *.o tecnicofs*
